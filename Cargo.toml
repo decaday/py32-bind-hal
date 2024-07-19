@@ -23,7 +23,12 @@ embedded-hal = "1.0.0-alpha.11"
 
 [features]
 default = ["py32_0-A"]
-py32_0-A = ["py32csdk-hal-sys/py32_0-A", "peri-gpioa", "peri-gpiob", "peri-gpiof"]
+py32_0-A = [
+    "py32csdk-hal-sys/py32_0-A", "csdk-hal",
+    "peri-gpioa", "peri-gpiob", "peri-gpiof"
+]
+csdk-hal = []
+
 peri-gpioa = []
 peri-gpiob = []
 peri-gpiof = []

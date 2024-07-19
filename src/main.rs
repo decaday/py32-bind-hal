@@ -1,7 +1,6 @@
 #![no_main]
 #![no_std]
 
-use bind_hal::gpio::csdk_hal as hal;
 use bind_hal::gpio;
 use py32csdk_hal_sys as chal;
 
@@ -14,11 +13,11 @@ fn main() -> ! {
 }
 
 pub fn init_pb3() {
-    let mut pin = hal::AnyPin::new_from_c_macros(chal::GPIOB, chal::GPIO_PIN_3);
+    let mut pin = gpio::AnyPin::new_from_c_macros(chal::GPIOB, chal::GPIO_PIN_3);
     pin.set_as_output(gpio::Speed::High);
     pin.set_high();
 
-    let mut pin2 = hal::AnyPin::new('B', 1);
+    let mut pin2 = gpio::AnyPin::new('B', 1);
     pin2.set_as_output(gpio::Speed::High);
     pin2.set_high();
 

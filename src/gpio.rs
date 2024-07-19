@@ -3,7 +3,11 @@
 // modified from https://github.com/embassy-rs/embassy/
 // 4b0615957fe86218eb0529ef35e52305ab9e29c4
 
+#[cfg(feature = "csdk-hal")]
 pub mod csdk_hal;
+#[cfg(feature = "csdk-hal")]
+pub use csdk_hal::*;
+
 
 
 /// Digital input or output level.

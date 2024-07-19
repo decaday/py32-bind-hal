@@ -13,7 +13,7 @@ rustflags = [
 ]
 
 [build]
-target = "thumbv6m-none-eabi"    # Cortex-M0 and Cortex-M0+)
+target = "thumbv6m-none-eabi"    # Cortex-M0 and Cortex-M0+
 
 [alias]
 rr = "run --release"

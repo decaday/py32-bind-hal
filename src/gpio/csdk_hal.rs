@@ -1,7 +1,7 @@
 //! stm32 cSDK HAL liked  implication
 
 #![macro_use]
-use core::convert::Infallible;
+// use core::convert::Infallible;
 use crate::gpio::{Pull, Speed, Level};
 
 use py32csdk_hal_sys as hal;

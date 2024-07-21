@@ -3,6 +3,7 @@
 
 use bind_hal::gpio;
 use py32csdk_hal_sys as chal;
+use embedded_hal as embedded_hal_1;
 
 #[cortex_m_rt::entry]
 fn main() -> ! {

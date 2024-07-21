@@ -1,7 +1,9 @@
 //! stm32 cSDK HAL liked  implication
 
 #![macro_use]
-// use core::convert::Infallible;
+use core::convert::Infallible;
+use embedded_hal as embedded_hal_1;
+
 use crate::gpio::{Pull, Speed, Level};
 
 use py32csdk_hal_sys as hal;
@@ -85,11 +87,11 @@ impl AnyPin{
         unsafe {
             match port{
                 #[cfg(feature = "peri-gpioa")]
-                hal::GPIOA => (),
+                hal::GPIOA => hal::HAL_RCC_GPIOA_CLK_ENABLE(),
                 #[cfg(feature = "peri-gpiob")]
                 hal::GPIOB => hal::HAL_RCC_GPIOB_CLK_ENABLE(),
                 #[cfg(feature = "peri-gpiof")]
-                hal::GPIOF => (),
+                hal::GPIOF => hal::HAL_RCC_GPIOF_CLK_ENABLE(),
                 _ => (),
             };
         }
@@ -213,5 +215,33 @@ impl AnyPin{
         unsafe {
             hal::HAL_GPIO_TogglePin(self.port, self.pin);
         }
+    }
+}
+
+impl embedded_hal_1::digital::ErrorType for AnyPin {
+    type Error = Infallible;
+}
+
+impl embedded_hal_1::digital::InputPin for AnyPin {
+    #[inline]
+    fn is_high(&mut self) -> Result<bool, Self::Error> {
+        Ok((*self).is_high())
+    }
+
+    #[inline]
+    fn is_low(&mut self) -> Result<bool, Self::Error> {
+        Ok((*self).is_low())
+    }
+}
+
+impl embedded_hal_1::digital::OutputPin for AnyPin {
+    #[inline]
+    fn set_low(&mut self) -> Result<(), Self::Error> {
+        Ok((*self).set_low())
+    }
+
+    #[inline]
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        Ok((*self).set_high())
     }
 }

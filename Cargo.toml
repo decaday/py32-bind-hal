@@ -25,14 +25,14 @@ defmt-rtt = "0.4"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 cortex-m-semihosting = "0.5.0"
 
-py32csdk-hal-sys = "0.1.1"
+py32csdk-hal-sys = "0.1.2"
 embedded-hal = "1.0.0-alpha.11"
 
 
 [features]
-default = ["py32_0-A"]
-py32_0-A = [
-    "py32csdk-hal-sys/py32_0-A", "csdk-hal",
+default = ["py32f030"]
+py32f030 = [
+    "py32csdk-hal-sys/py32f030", "csdk-hal",
     "peri-gpioa", "peri-gpiob", "peri-gpiof"
 ]
 csdk-hal = []

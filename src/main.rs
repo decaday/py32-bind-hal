@@ -2,8 +2,8 @@
 #![no_std]
 
 use bind_hal::gpio;
-use bind_hal::power;
 use py32csdk_hal_sys as csdk;
+use bind_hal::power;
 use embedded_hal as embedded_hal_1;
 
 #[cortex_m_rt::entry]

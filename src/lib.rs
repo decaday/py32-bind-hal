@@ -37,3 +37,5 @@ unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
 
 pub mod gpio;
 pub mod power;
+
+pub mod i2c;

@@ -58,8 +58,9 @@ impl SystickDriver {
     fn on_interrupt(&self) {
         if self.tick_low.load(Ordering::Relaxed) == u32::MAX {
             self.tick_low.store(0, Ordering::Relaxed);
+            // thembv6m only supported store and load
             // self.tick_high.fetch_add(1, Ordering::Relaxed);
-            // thembv6m only supported store  and load
+            
             
             self.tick_high.store(
                 self.tick_high.load(Ordering::Relaxed) + 1,
@@ -102,15 +103,15 @@ impl SystickDriver {
 
 impl Driver for SystickDriver {
     fn now(&self) -> u64 {
-        let low = self.tick_high.load(Ordering::Relaxed);
-        let high = self.tick_low.load(Ordering::Relaxed);
+        let low = self.tick_low.load(Ordering::Relaxed);
+        let high = self.tick_high.load(Ordering::Relaxed);
         ((high as u64) << 32) | (low as u64)
     }
     unsafe fn allocate_alarm(&self) -> Option<AlarmHandle> {
         let old_count = self.alarm_count.load(Ordering::Acquire);
         let id = if old_count < ALARM_COUNT as u8 {
-            self.alarm_count.store(old_count + 1, Ordering::SeqCst);
-            Some(old_count + 1)
+            self.alarm_count.store(old_count + 1, Ordering::Release);
+            Some(old_count)
         } else {
             None
         };
@@ -150,4 +151,8 @@ pub(crate) fn init() {
 
 pub(crate) fn on_interrupt() {
     DRIVER.on_interrupt();
+}
+
+pub fn now() -> u64 {
+    DRIVER.now()
 }

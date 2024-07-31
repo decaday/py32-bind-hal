@@ -4,7 +4,7 @@
 // use embedded_hal as embedded_hal_1;
 
 #[cfg(feature = "csdk-hal")]
-use py32csdk_hal_sys as csdk;
+use crate::csdk_hal::csdk;
 
 
 pub enum StopEntry {

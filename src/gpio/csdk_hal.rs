@@ -6,7 +6,7 @@ use embedded_hal as embedded_hal_1;
 
 use crate::gpio::{Pull, Speed, Level};
 
-use py32csdk_hal_sys as csdk;
+use crate::csdk_hal::csdk;
 
 
 impl Pull {

@@ -34,10 +34,19 @@ unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
     }
 }
 
+pub fn init(){
+    crate::csdk_hal::init();
+    #[cfg(feature = "embassy")]
+    crate::time_driver::init();
+}
+
 
 pub mod gpio;
 
 pub mod power;
+
 // pub mod i2c;
 
 pub mod csdk_hal;
+
+mod time_driver;

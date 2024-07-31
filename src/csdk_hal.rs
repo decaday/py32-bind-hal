@@ -1,6 +1,6 @@
 use cortex_m_rt::exception;
 
-use py32csdk_hal_sys as csdk;
+pub use py32csdk_hal_sys as csdk;
 
 pub fn init(){
     unsafe {
@@ -10,6 +10,9 @@ pub fn init(){
 
 #[exception]
 fn SysTick(){
-    csdk::HAL_IncTick();
-    defmt::println!("Hello, world!");
+    unsafe {
+        csdk::HAL_IncTick();
+    }
+    #[cfg(feature = "embassy")]
+    crate::time_driver::on_interrupt();
 }

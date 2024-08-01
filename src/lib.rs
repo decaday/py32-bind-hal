@@ -40,12 +40,37 @@ pub fn init(){
     crate::time_driver::init();
 }
 
+pub mod mode {
+    trait SealedMode {}
+
+    /// Operating mode for a peripheral.
+    #[allow(private_bounds)]
+    pub trait Mode: SealedMode {}
+
+    macro_rules! impl_mode {
+        ($name:ident) => {
+            impl SealedMode for $name {}
+            impl Mode for $name {}
+        };
+    }
+
+    /// Blocking mode.
+    pub struct Blocking;
+    /// Async mode.
+    pub struct Async;
+
+    impl_mode!(Blocking);
+    impl_mode!(Async);
+}
+
+
+pub use py32csdk_hal_sys as csdk;
 
 pub mod gpio;
 
 pub mod power;
 
-// pub mod i2c;
+pub mod i2c;
 
 pub mod csdk_hal;
 

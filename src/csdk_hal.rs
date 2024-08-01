@@ -1,6 +1,6 @@
 use cortex_m_rt::exception;
 
-pub use py32csdk_hal_sys as csdk;
+use crate::csdk;
 
 pub fn init(){
     unsafe {

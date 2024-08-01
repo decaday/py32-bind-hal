@@ -3,8 +3,7 @@
 // use core::convert::Infallible;
 // use embedded_hal as embedded_hal_1;
 
-#[cfg(feature = "csdk-hal")]
-use crate::csdk_hal::csdk;
+use crate::csdk;
 
 
 pub enum StopEntry {

@@ -20,12 +20,11 @@ use bind_hal::csdk_hal;
 #[embassy_executor::main(entry = "cortex_m_rt::entry")]
 async fn main(_spawner: Spawner) -> ! {
     bind_hal::init();
-    let now = bind_hal::time_driver::now();
-    defmt::println!("Hello, world!  {}", now);
+    defmt::println!("Hello, world!  1");
     init_pb3();
     Timer::after_secs(5).await;
     let now = bind_hal::time_driver::now();
-    defmt::println!("Hello, world!  {}", now);
+    defmt::println!("Hello, world!  2");
     // bind_hal::exit();
 
     loop {

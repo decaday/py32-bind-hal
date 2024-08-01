@@ -50,7 +50,7 @@ embassy-executor = { version = "0.5", features = [
 
 
 [features]
-default = ["py32f030", "embassy"]
+default = ["py32f030", "embassy", "time"]
 
 embassy = [
     "dep:embassy-sync",

@@ -153,6 +153,6 @@ pub(crate) fn on_interrupt() {
     DRIVER.on_interrupt();
 }
 
-pub fn now() -> u64 {
-    DRIVER.now()
-}
+// pub fn now() -> u64 {
+//     DRIVER.now()
+// }

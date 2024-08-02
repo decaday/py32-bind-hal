@@ -105,9 +105,9 @@ impl AnyPin{
     /// The internal weak pull-up and pull-down resistors will be enabled according to `pull`.
     #[inline(never)]
     pub fn set_as_input(&mut self, pull: Pull, speed: Speed) {
-        self.c_init_type.Speed = speed;
+        self.c_init_type.Speed = speed.into();
         self.c_init_type.Mode = csdk::GPIO_MODE_INPUT;
-        self.c_init_type.Pull = pull;
+        self.c_init_type.Pull = pull.into();
         unsafe {
             csdk::HAL_GPIO_Init(self.port,
                                &mut self.c_init_type as *mut csdk::GPIO_InitTypeDef);
@@ -122,7 +122,7 @@ impl AnyPin{
     /// The internal weak pull-up and pull-down resistors will be disabled.
     #[inline(never)]
     pub fn set_as_output(&mut self, speed: Speed) {
-        self.c_init_type.Speed = speed;
+        self.c_init_type.Speed = speed.into();
         self.c_init_type.Mode = csdk::GPIO_MODE_OUTPUT_PP;
         self.c_init_type.Pull = csdk::GPIO_NOPULL;
         unsafe {
@@ -165,8 +165,8 @@ impl AnyPin{
     #[inline]
     pub fn set_as_af_od(&mut self, af_num: u8, pull: Pull, speed: Speed) {
         self.c_init_type.Mode = csdk::GPIO_MODE_OUTPUT_OD;
-        self.c_init_type.Pull = pull;
-        self.c_init_type.Speed = speed;
+        self.c_init_type.Pull = pull.into();
+        self.c_init_type.Speed = speed.into();
         self.c_init_type.Alternate = af_num as u32;
         unsafe {
             csdk::HAL_GPIO_Init(self.port, &mut self.c_init_type);
@@ -180,8 +180,8 @@ impl AnyPin{
     #[inline]
     pub fn set_as_af_pp(&mut self, af_num: u8, pull: Pull, speed: Speed) {
         self.c_init_type.Mode = csdk::GPIO_MODE_AF_OD;
-        self.c_init_type.Pull = pull;
-        self.c_init_type.Speed = speed;
+        self.c_init_type.Pull = pull.into();
+        self.c_init_type.Speed = speed.into();
         self.c_init_type.Alternate = af_num as u32;
         unsafe {
             csdk::HAL_GPIO_Init(self.port, &mut self.c_init_type);

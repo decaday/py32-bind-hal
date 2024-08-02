@@ -7,7 +7,6 @@
 pub mod csdk_hal;
 #[cfg(feature = "csdk-hal")]
 pub use csdk_hal::*;
-use crate::csdk;
 
 
 

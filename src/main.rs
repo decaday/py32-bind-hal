@@ -23,7 +23,6 @@ async fn main(_spawner: Spawner) -> ! {
     defmt::println!("Hello, world!  1");
     init_pb3();
     Timer::after_secs(5).await;
-    let now = bind_hal::time_driver::now();
     defmt::println!("Hello, world!  2");
     // bind_hal::exit();
 

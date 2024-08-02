@@ -20,10 +20,12 @@ harness = false
 [dependencies]
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7"
-defmt = "0.3"
 defmt-rtt = "0.4"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 # cortex-m-semihosting = { version = "0.5", features = ["no-semihosting"] }
+
+
+# thiserror = "1.0"
 cortex-m-semihosting = { version = "0.5" }
 critical-section = { version = "1.1" }
 
@@ -35,12 +37,12 @@ embassy-time-driver = { version = "0.1.0", features = [
 embassy-time = { version = "0.3.0", features = [
     "tick-hz-1_000",
 ], optional = true }
+futures-util = { version = "0.3.30", default-features = false }
 
-py32csdk-hal-sys = "0.1.3"
 embedded-hal = "1.0.0-alpha.11"
 
-# thiserror = "1.0"
-
+py32csdk-hal-sys = "0.1.3"
+defmt = { version = "0.3", optional = true }
 embassy-executor = { version = "0.5", features = [
     "nightly",
     "integrated-timers",
@@ -50,7 +52,7 @@ embassy-executor = { version = "0.5", features = [
 
 
 [features]
-default = ["py32f030", "embassy", "time"]
+default = ["py32f030", "embassy", "time", "defmt"]
 
 embassy = [
     "dep:embassy-sync",
@@ -58,11 +60,16 @@ embassy = [
     "dep:embassy-time-driver",
     "dep:embassy-time",
 ]
+time = [
+    "dep:embassy-time",
+]
+defmt = ["dep:defmt", "embassy-sync/defmt", "embassy-time?/defmt"]
+
 
 py32f030 = [
     "py32csdk-hal-sys/py32f030", "csdk-hal",
     "peri-gpioa", "peri-gpiob", "peri-gpiof",
-    "peri-i2c"
+    "peri-i2c", "peri-dma"
 ]
 csdk-hal = []
 
@@ -72,6 +79,7 @@ peri-gpiof = []
 peri-i2c = []
 peri-i2c1 = []
 peri-i2c2 = []
+peri-dma = []
 
 
 

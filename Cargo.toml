@@ -69,14 +69,18 @@ defmt = ["dep:defmt", "embassy-sync/defmt", "embassy-time?/defmt"]
 py32f030 = [
     "py32csdk-hal-sys/py32f030", "csdk-hal",
     "peri-gpioa", "peri-gpiob", "peri-gpiof",
-    "peri-i2c", "peri-dma"
+    "peri-i2c", "peri-i2c0", "peri-dma"
 ]
 csdk-hal = []
 
 peri-gpioa = []
 peri-gpiob = []
 peri-gpiof = []
+
 peri-i2c = []
+# only one i2c without number
+peri-i2c0 = []
+
 peri-i2c1 = []
 peri-i2c2 = []
 peri-dma = []

@@ -52,24 +52,24 @@ pub enum Error {
 pub struct Config {
     /// Specifies the clock frequency.
     /// This parameter must be set to a value lower than 400kHz
-    clock_speed: u32,
+    pub clock_speed: u32,
     /// Specifies the I2C fast mode duty cycle.
     /// his parameter can be a value of @ref I2C_duty_cycle_in_fast_mode
-    duty_cycle: u32,
+    pub duty_cycle: u32,
     /// Specifies the first device own address.
     /// This parameter can be a 7-bit or 10-bit address.
-    own_address1: u32,
+    pub own_address1: u32,
     /// Specifies if general call mode is selected.
     /// This parameter can be a value of @ref I2C_general_call_addressing_mode */
-    general_call_mode: u32,
+    pub general_call_mode: u32,
     /// Specifies if nostretch mode is selected.
     /// This parameter can be a value of @ref I2C_nostretch_mode
-    no_stretch_mode: u32,
+    pub no_stretch_mode: u32,
     /// Timeout.
     #[cfg(feature = "time")]
     pub timeout: embassy_time::Duration,
     #[cfg(not(feature = "time"))]
-    timeout_tick: u32,
+    pub timeout_tick: u32,
 }
 
 impl Default for Config {
@@ -99,11 +99,30 @@ pub struct I2c<M: Mode> {
     timeout_tick: u32,
     _phantom: PhantomData<M>,
 }
-
 impl I2c<Blocking> {
     /// Create a new blocking I2C driver.
-    pub fn new_blocking(instance: *mut csdk::I2C_TypeDef, config: Config) -> Result<Self, Error> {
-        Self::new_inner(instance, config)
+    pub fn new_blocking_from_csdk(instance: *mut csdk::I2C_TypeDef, config: Config) -> Result<Self, Error> {
+        Self::new_from_csdk(instance, config)
+    }
+
+    #[cfg(feature = "peri-i2c0")]
+    pub fn new_blocking(config: Config) -> Result<Self, Error> {
+        let instance = csdk::I2C;
+        Self::new_from_csdk(instance, config)
+    }
+
+    #[cfg(not(feature = "peri-i2c0"))]
+    pub fn new_blocking(instance_num: u8, config: Config) -> Result<Self, Error> {
+        let instance = match instance_num {
+            #[cfg(feature = "peri-i2c1")]
+            1 => csdk::I21,
+            #[cfg(feature = "peri-i2c2")]
+            2 => csdk::I22,
+            // TODO
+            _ => panic("unknown i2c id"),
+        };
+        let instance = csdk::I2C;
+        Self::new_from_csdk(instance, config)
     }
 }
 
@@ -116,7 +135,7 @@ impl I2c<Blocking> {
 
 impl<M: Mode> I2c<M> {
     /// Create a new I2C driver.
-    fn new_inner(instance: *mut csdk::I2C_TypeDef, config: Config) -> Result<Self, Error> {
+    fn new_from_csdk(instance: *mut csdk::I2C_TypeDef, config: Config) -> Result<Self, Error> {
         let handle = csdk::I2C_HandleTypeDef {
             Instance: instance,
             Init: csdk::I2C_InitTypeDef {
@@ -158,7 +177,7 @@ impl<M: Mode> I2c<M> {
     fn enable_and_init(&mut self) -> Result<(), Error> {
         unsafe{
             match self.handle.Instance {
-                #[cfg(feature = "peri-i2c")]
+                #[cfg(feature = "peri-i2c0")]
                 csdk::I2C => {
                     csdk::HAL_RCC_I2C_CLK_ENABLE();
                     csdk::HAL_RCC_I2C_FORCE_RESET();
@@ -198,6 +217,7 @@ impl<M: Mode> I2c<M> {
 
 impl<M: Mode> I2c<M> {
     fn get_error_code(&self, result: u32) -> Result<(), Error> {
+        // defmt::println!("get_error_code:result: {} code: {}", result, self.handle.ErrorCode);
         if result == csdk::HAL_StatusTypeDef_HAL_OK {
             Ok(())
         } else {
@@ -208,9 +228,9 @@ impl<M: Mode> I2c<M> {
                 csdk::HAL_I2C_ERROR_ARLO => Error::Arbitration,
                 csdk::HAL_I2C_ERROR_AF => Error::Nack,
                 csdk::HAL_I2C_ERROR_OVR => Error::Overrun,
-                #[cfg(feature = "peri-i2c2")]
+                #[cfg(feature = "peri-dma")]
                 csdk::HAL_I2C_ERROR_DMA => Error::Dma,
-                #[cfg(feature = "peri-i2c2")]
+                #[cfg(feature = "peri-dma")]
                 csdk::HAL_I2C_ERROR_DMA_PARAM => Error::DmaParam,
                 csdk::HAL_I2C_ERROR_TIMEOUT => Error::Timeout,
                 csdk::HAL_I2C_ERROR_SIZE => Error::Size,

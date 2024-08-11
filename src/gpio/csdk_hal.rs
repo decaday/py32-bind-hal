@@ -40,7 +40,7 @@ pub struct AnyPin {
 
 impl AnyPin{
     /// Form csdk macros like GPIOB GPIO_PIN_4
-    pub fn new_from_c_macros(port: *mut csdk::GPIO_TypeDef, pin: u16) -> Self {
+    pub fn new_from_csdk(port: *mut csdk::GPIO_TypeDef, pin: u16) -> Self {
         let c_init_type = csdk::GPIO_InitTypeDef {
             Pin: pin as u32,
             Mode: csdk::GPIO_MODE_OUTPUT_PP,
@@ -164,7 +164,7 @@ impl AnyPin{
     /// completely unchecked, it can attach the pin to literally any peripheral, so use with care.
     #[inline]
     pub fn set_as_af_od(&mut self, af_num: u8, pull: Pull, speed: Speed) {
-        self.c_init_type.Mode = csdk::GPIO_MODE_OUTPUT_OD;
+        self.c_init_type.Mode = csdk::GPIO_MODE_AF_OD;
         self.c_init_type.Pull = pull.into();
         self.c_init_type.Speed = speed.into();
         self.c_init_type.Alternate = af_num as u32;
@@ -179,7 +179,7 @@ impl AnyPin{
     /// completely unchecked, it can attach the pin to literally any peripheral, so use with care.
     #[inline]
     pub fn set_as_af_pp(&mut self, af_num: u8, pull: Pull, speed: Speed) {
-        self.c_init_type.Mode = csdk::GPIO_MODE_AF_OD;
+        self.c_init_type.Mode = csdk::GPIO_MODE_AF_PP;
         self.c_init_type.Pull = pull.into();
         self.c_init_type.Speed = speed.into();
         self.c_init_type.Alternate = af_num as u32;

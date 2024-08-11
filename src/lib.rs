@@ -70,6 +70,7 @@ pub mod gpio;
 
 pub mod power;
 
+#[cfg(feature = "peri-i2c")]
 pub mod i2c;
 
 pub mod csdk_hal;

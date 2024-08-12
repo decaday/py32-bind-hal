@@ -15,6 +15,7 @@ use bind_hal::gpio;
 use py32csdk_hal_sys as csdk;
 use bind_hal::power;
 use bind_hal::i2c;
+use bind_hal::exti;
 use bind_hal::csdk_hal;
 
 
@@ -25,7 +26,9 @@ async fn main(_spawner: Spawner) -> ! {
     init_pb3();
     defmt::println!("Hello, world!  2");
     // bind_hal::exit();
-    i2c_test();
+    // i2c_test();
+    exti_test().await;
+    defmt::println!("Hello, world!  3");
 
     loop {
         // defmt::println!("Hello World! n");
@@ -63,4 +66,12 @@ fn i2c_test() {
             csdk::HAL_Delay(100);
         }
     }
+}
+
+async fn exti_test() {
+    let mut pin = exti::ExtiInput::new(
+        gpio::AnyPin::new('B', 6), 
+        gpio::Pull::None, 
+        gpio::Speed::High);
+    pin.wait_for_any_edge().await;
 }

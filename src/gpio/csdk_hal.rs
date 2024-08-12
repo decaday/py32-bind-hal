@@ -31,10 +31,11 @@ impl From<Speed> for u32 {
 
 /// Any pin.
 /// for example,{csdk::GPIOB, csdk::GPIO_PIN_4, xxx}
+#[derive(Copy, Clone)]
 pub struct AnyPin {
-    port: *mut csdk::GPIO_TypeDef,
-    pin: u16,
-    c_init_type: csdk::GPIO_InitTypeDef,
+    pub port: *mut csdk::GPIO_TypeDef,
+    pub pin: u16,
+    pub c_init_type: csdk::GPIO_InitTypeDef,
 }
 
 
@@ -58,7 +59,7 @@ impl AnyPin{
         assert!(pin_num < 16, "Pin num out of range(0-15)!");
 
         // calculate the GPIO_PIN_x
-        let pin = 2i32.pow(pin_num as u32) as u16;
+        let pin = 2_i32.pow(pin_num as u32) as u16;
 
         let port = match port_char{
             #[cfg(feature = "peri-gpioa")]

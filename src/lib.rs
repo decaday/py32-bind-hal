@@ -73,6 +73,8 @@ pub mod power;
 #[cfg(feature = "peri-i2c")]
 pub mod i2c;
 
+pub mod exti;
+
 pub mod csdk_hal;
 
 mod time_driver;

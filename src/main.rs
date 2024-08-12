@@ -12,7 +12,7 @@ use embassy_executor::Spawner;
 use embassy_time::Timer;
 
 use bind_hal::gpio;
-use py32csdk_hal_sys as csdk;
+use bind_hal::csdk;
 use bind_hal::power;
 use bind_hal::i2c;
 use bind_hal::exti;
@@ -28,7 +28,14 @@ async fn main(_spawner: Spawner) -> ! {
     // bind_hal::exit();
     // i2c_test();
     exti_test().await;
-    defmt::println!("Hello, world!  3");
+    // defmt::println!("Hello, world!  3");
+    // exti_test().await;
+    // defmt::println!("Hello, world!  4");
+    unsafe{
+        let imr_value = (*csdk::EXTI).IMR;
+        defmt::println!("IMR: {:X}", imr_value);
+    }
+
 
     loop {
         // defmt::println!("Hello World! n");
@@ -74,4 +81,7 @@ async fn exti_test() {
         gpio::Pull::None, 
         gpio::Speed::High);
     pin.wait_for_any_edge().await;
+    defmt::println!("Hello, world!  3");
+    pin.wait_for_any_edge().await;
+    defmt::println!("Hello, world!  4");
 }

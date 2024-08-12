@@ -7,6 +7,7 @@ use core::convert::Infallible;
 use core::future::Future;
 use core::marker::PhantomData;
 use core::pin::Pin;
+use core::sync::atomic::{AtomicU16, Ordering};
 use core::task::{Context, Poll};
 
 extern crate py32csdk_hal_sys as device;
@@ -23,12 +24,17 @@ use crate::csdk;
 const EXTI_COUNT: usize = 16;
 const NEW_AW: AtomicWaker = AtomicWaker::new();
 static EXTI_WAKERS: [AtomicWaker; EXTI_COUNT] = [NEW_AW; EXTI_COUNT];
+static EXTI_FLAGS: AtomicU16 = AtomicU16::new(0);
 
 unsafe fn on_irq() {
     let bits: u32 = (*csdk::EXTI).PR;
 
     // We don't handle or change any EXTI lines above 16.
     let bits = bits & 0x0000FFFF;
+
+    // thembv6m has not fetch_or
+    let new_flags = ( EXTI_FLAGS.load(Ordering::Relaxed) as u32 | bits ) as u16; 
+    EXTI_FLAGS.store(new_flags, Ordering::Relaxed);
 
     // Mask all the channels that fired.
     (*csdk::EXTI).IMR &= !bits;
@@ -243,6 +249,9 @@ impl<'a> ExtiInputFuture<'a> {
             }
         });
 
+        let flags = EXTI_FLAGS.load(Ordering::Relaxed) & (!pin.pin);
+        EXTI_FLAGS.store(flags, Ordering::Relaxed);
+
         Self {
             pin,
             phantom: PhantomData,
@@ -256,13 +265,11 @@ impl<'a> Future for ExtiInputFuture<'a> {
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         EXTI_WAKERS[self.pin.pin.trailing_zeros() as usize].register(cx.waker());
-        unsafe{
-            let imr_value = (*csdk::EXTI).IMR;
-            if (imr_value & self.pin.pin as u32) != 0 {
-                Poll::Ready(())
-            } else {
-                Poll::Pending
-            }
+        let flags = EXTI_FLAGS.load(Ordering::Relaxed) as u32;
+        if (flags & self.pin.pin as u32) != 0 {
+            Poll::Ready(())
+        } else {
+            Poll::Pending
         }
     }
 }

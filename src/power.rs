@@ -25,13 +25,17 @@ pub enum RegulatorMode {
 #[inline]
 pub fn enter_sleep_mode(entry: SleepEntry) {
     unsafe {
+        csdk::HAL_SuspendTick();
         csdk::HAL_PWR_EnterSLEEPMode(entry as u8);
+        csdk::HAL_ResumeTick();
     }
 }
 
 #[inline]
 pub fn enter_stop_mode(regulator_mode: RegulatorMode, entry: StopEntry) {
     unsafe {
+        csdk::HAL_SuspendTick();
         csdk::HAL_PWR_EnterSTOPMode(regulator_mode as u32, entry as u8);
+        csdk::HAL_ResumeTick();
     }
 }

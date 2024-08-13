@@ -145,10 +145,12 @@ impl Driver for SystickDriver {
     }
 }
 
+#[inline]
 pub(crate) fn init() {
     DRIVER.init();
 }
 
+#[inline]
 pub(crate) fn on_interrupt() {
     DRIVER.on_interrupt();
 }

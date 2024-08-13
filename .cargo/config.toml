@@ -1,6 +1,6 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
 # TODO(2) replace `$CHIP` with your chip's name (see `probe-rs chip list` output)
-runner = "probe-rs run --chip PY32F030x6"
+runner = "probe-rs run --chip PY32F030x6 --probe 0d28:0204:000100011A5A5BB600000000000A1723A5A5A5A597969908"
 # runner = ["probe-rs", "run", "--chip", "$CHIP", "--log-format", "{L} {s}"]
 
 rustflags = [
@@ -13,9 +13,6 @@ rustflags = [
 ]
 
 [env]
-
-[toolchain]
-
 
 
 [build]

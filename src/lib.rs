@@ -84,6 +84,8 @@ pub mod exti;
 
 pub mod rcc;
 
+pub mod adc;
+
 pub mod csdk_hal;
 
 mod time_driver;

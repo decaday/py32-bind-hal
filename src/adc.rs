@@ -20,7 +20,7 @@ impl Default for AdcConfig {
     fn default() -> Self {
         Self {
             init: csdk::ADC_InitTypeDef {
-                ClockPrescaler: csdk::ADC_CLOCK_SYNC_PCLK_DIV2, // Set ADC clock
+                ClockPrescaler: csdk::ADC_CLOCK_SYNC_PCLK_DIV1, // Set ADC clock
                 Resolution: csdk::ADC_RESOLUTION_12B,       // 12-bit resolution
                 DataAlign: csdk::ADC_DATAALIGN_RIGHT,      // Right alignment
                 ScanConvMode: csdk::ADC_SCAN_DIRECTION_FORWARD, // Forward scan direction
@@ -32,7 +32,7 @@ impl Default for AdcConfig {
                 ExternalTrigConvEdge: csdk::ADC_EXTERNALTRIGCONVEDGE_NONE, // No trigger edge
                 DMAContinuousRequests: csdk::FunctionalState_DISABLE,        // Disable DMA
                 Overrun: csdk::ADC_OVR_DATA_OVERWRITTEN,   // Overwrite data on overrun
-                SamplingTimeCommon: csdk::ADC_SAMPLETIME_41CYCLES_5, // Set sampling time to 41.5 ADC clock cycles
+                SamplingTimeCommon: csdk::ADC_SAMPLETIME_13CYCLES_5, // Set sampling time to 41.5 ADC clock cycles
             },
             timeout_ticks: 10000,
         }
@@ -40,7 +40,7 @@ impl Default for AdcConfig {
 }
 
 impl Adc {
-    fn new(config: AdcConfig, instance_num: u8) -> Result<(), crate::Error> {
+    pub fn new(config: AdcConfig, instance_num: u8) -> Result<Self, crate::Error> {
         let instance = Self::new_instance_from_num(instance_num);
         let mut adc = Self {
             handle: csdk::ADC_HandleTypeDef {
@@ -53,8 +53,23 @@ impl Adc {
             },
             timeout_ticks: config.timeout_ticks,
         };
+        adc.open_clock();
         unsafe {
-            check(csdk::HAL_ADC_Init(&mut adc.handle))
+            check(csdk::HAL_ADC_Init(&mut adc.handle))?;
+        }
+        Ok(adc)
+    }
+
+    fn open_clock(&self) {
+        unsafe{
+            match self.handle.Instance {
+                csdk::ADC1 => {
+                    csdk::HAL_RCC_ADC_FORCE_RESET();
+                    csdk::HAL_RCC_ADC_RELEASE_RESET();
+                    csdk::HAL_RCC_ADC_CLK_ENABLE();
+                    },
+                _ => todo!(),
+            }
         }
     }
 
@@ -65,8 +80,8 @@ impl Adc {
         }
     }
 
-    fn new_regular_channel(&mut self, channel: u32) -> Result<(), crate::Error> {
-        let channel_config = csdk::ADC_ChannelConfTypeDef {
+    pub fn new_regular_channel(&mut self, channel: u32) -> Result<(), crate::Error> {
+        let mut channel_config = csdk::ADC_ChannelConfTypeDef {
             Channel: channel,
             Rank: csdk::ADC_RANK_CHANNEL_NUMBER,
             // Obsolete parameter

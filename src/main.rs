@@ -11,7 +11,7 @@ use embedded_hal::{self as embedded_hal_1, i2c::I2c};
 use embassy_executor::Spawner;
 use embassy_time::Timer;
 
-use bind_hal::{csdk, gpio, power, i2c, exti, rcc};
+use bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc};
 
 
 #[embassy_executor::main]
@@ -21,6 +21,7 @@ async fn main(_spawner: Spawner) -> ! {
     init_pb3();
     defmt::println!("Hello, world!  2");
     rcc_test();
+    adc_blocking_test();
 
     // i2c_test();
     // exti_test().await;
@@ -85,4 +86,12 @@ fn rcc_test() {
         let freq = csdk::HAL_RCC_GetSysClockFreq();
         defmt::println!("HAL_RCC_GetSysClockFreq  {}", freq);
     }
+}
+
+fn adc_blocking_test() {
+    let mut adc = adc::Adc::new(Default::default(), 1).unwrap();
+    adc.new_regular_channel(csdk::ADC_CHANNEL_VREFINT);
+    adc.start_blocking();
+    let result = adc.blocking_read();
+    defmt::println!("adc value  {}", result);
 }

@@ -5,6 +5,7 @@
 
 use crate::csdk;
 use crate::csdk_hal::check;
+use crate::dma;
 
 pub struct Adc {
     handle: csdk::ADC_HandleTypeDef,
@@ -16,8 +17,8 @@ pub struct AdcConfig {
     timeout_ticks: u32,
 }
 
-impl Default for AdcConfig {
-    fn default() -> Self {
+impl AdcConfig {
+    pub fn new() -> Self {
         Self {
             init: csdk::ADC_InitTypeDef {
                 ClockPrescaler: csdk::ADC_CLOCK_SYNC_PCLK_DIV1, // Set ADC clock
@@ -37,12 +38,42 @@ impl Default for AdcConfig {
             timeout_ticks: 10000,
         }
     }
+
+    pub fn set_as_blocking(&mut self) {
+        self.init.DMAContinuousRequests = csdk::FunctionalState_DISABLE;
+        self.init.DiscontinuousConvMode = csdk::FunctionalState_DISABLE;
+        self.init.ContinuousConvMode = csdk::FunctionalState_DISABLE;
+    }
+
+    pub fn set_as_dma(&mut self) {
+        self.init.DMAContinuousRequests = csdk::FunctionalState_ENABLE;
+        self.init.DiscontinuousConvMode = csdk::FunctionalState_ENABLE;
+        self.init.ContinuousConvMode = csdk::FunctionalState_ENABLE;
+    }
+
+    pub fn set_software_start(&mut self) {
+        self.init.ExternalTrigConv = csdk::ADC_SOFTWARE_START;
+        self.init.ExternalTrigConvEdge = csdk::ADC_EXTERNALTRIGCONVEDGE_NONE;
+    }
 }
 
 impl Adc {
     pub fn new(config: AdcConfig, instance_num: u8) -> Result<Self, crate::Error> {
+        let mut adc = Self::new_inner(config, instance_num);
+        adc.init_inner()?;
+        Ok(adc)
+    }
+
+    pub fn new_dma(config: AdcConfig, instance_num: u8, mut dma: dma::DmaChannel) -> Result<Self, crate::Error> {
+        let mut adc = Self::new_inner(config, instance_num);
+        dma.link(&mut adc);
+        adc.init_inner()?;
+        Ok(adc)
+    }
+
+    fn new_inner(config: AdcConfig, instance_num: u8) -> Self {
         let instance = Self::new_instance_from_num(instance_num);
-        let mut adc = Self {
+        Self {
             handle: csdk::ADC_HandleTypeDef {
                 Instance: instance,
                 Init: config.init,
@@ -52,12 +83,17 @@ impl Adc {
                 ErrorCode: 0,
             },
             timeout_ticks: config.timeout_ticks,
-        };
-        adc.open_clock();
-        unsafe {
-            check(csdk::HAL_ADC_Init(&mut adc.handle))?;
         }
-        Ok(adc)
+    }
+
+    fn init_inner(&mut self) -> Result<(), crate::Error> {
+        self.open_clock();
+
+        unsafe {
+            check(csdk::HAL_ADC_Calibration_Start(&mut self.handle))?;
+            check(csdk::HAL_ADC_Init(&mut self.handle))?;
+        }
+        Ok(())
     }
 
     fn open_clock(&self) {
@@ -114,5 +150,32 @@ impl Adc {
         unsafe {
             csdk::HAL_ADC_GetValue(&mut self.handle)
         }
+    }
+
+    pub fn start_dma(&mut self, read: &mut [u32]) -> Result<(), crate::Error> {
+        unsafe {
+            check(csdk::HAL_ADC_Start_DMA(
+                &mut self.handle,
+                read.as_mut_ptr(),
+                read.len() as u32))
+        }
+    }
+
+    pub fn stop_dma(&mut self) -> Result<(), crate::Error> {
+        unsafe {
+            check(csdk::HAL_ADC_Stop_DMA(&mut self.handle))
+        }
+    }
+}
+
+impl dma::HasDmaField for Adc {
+    fn set_dma_field(&mut self, dma_handle: &mut dma::DmaChannel){
+        self.handle.DMA_Handle = &mut dma_handle.handle;
+    }
+    
+    fn get_handle_ptr(&mut self) -> *mut core::ffi::c_void {
+        &mut self.handle 
+            as *mut csdk::ADC_HandleTypeDef 
+            as *mut core::ffi::c_void
     }
 }

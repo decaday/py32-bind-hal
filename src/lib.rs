@@ -43,6 +43,12 @@ pub enum Error{
 
 pub fn init(){
     crate::csdk_hal::init();
+
+    unsafe {
+        csdk::HAL_RCC_SYSCFG_CLK_ENABLE();
+        csdk::HAL_RCC_PWR_CLK_ENABLE();
+    }
+
     #[cfg(feature = "embassy")]
     crate::time_driver::init();
 }

@@ -21,9 +21,9 @@ PY32 HAL
 
 | Peripherals/Functions | Bindings | Easy-to-use func | Embedded-Hal | Embedded-Async | Polling | DMA  | IT   |
 | --------------------- | -------- | ---------------- | ------------ | -------------- | ------- | ---- | ---- |
-| EXTI                  | ✔        | ✔                | ✔            | ✔              |         | ✖    | ✔    |
+| EXTI                  | ✔        | ✔                | ✔            | ✔              | ✖ | ✖   | ✔    |
 | I2C                   | ✔        | ✔                | ✔            |                | ✔       |      |      |
-| ADC                   | ✔        | ✔(only polling)              |              |                |         |      | ✔     |
+| ADC                   | ✔        | ✔(only polling)              |              |                | ✔ | ✔ |      |
 | USART                 | ✔        | WIP              |              |                |         |      |      |
 | SPI                   | ✔        |                  |              |                |         |      |      |
 | LED                   | ✔        |                  |              |                |         |      |      |

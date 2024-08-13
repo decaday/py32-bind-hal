@@ -11,7 +11,7 @@ use embedded_hal::{self as embedded_hal_1, i2c::I2c};
 use embassy_executor::Spawner;
 use embassy_time::Timer;
 
-use bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc};
+use bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc, dma};
 
 
 #[embassy_executor::main]
@@ -21,7 +21,8 @@ async fn main(_spawner: Spawner) -> ! {
     init_pb3();
     defmt::println!("Hello, world!  2");
     rcc_test();
-    adc_blocking_test();
+    // adc_blocking_test();
+    adc_dma_test();
 
     // i2c_test();
     // exti_test().await;
@@ -89,9 +90,27 @@ fn rcc_test() {
 }
 
 fn adc_blocking_test() {
-    let mut adc = adc::Adc::new(Default::default(), 1).unwrap();
-    adc.new_regular_channel(csdk::ADC_CHANNEL_VREFINT);
-    adc.start_blocking();
+    let mut adc_config = adc::AdcConfig::new();
+    adc_config.set_as_blocking();
+    let mut adc = adc::Adc::new(adc_config, 1).unwrap();
+    adc.new_regular_channel(csdk::ADC_CHANNEL_VREFINT).unwrap();
+    adc.start_blocking().unwrap();
     let result = adc.blocking_read();
     defmt::println!("adc value  {}", result);
+}
+
+fn adc_dma_test() {
+    let dma_config = dma::Config::new_peri_to_mem();
+    dma::DmaChannel::new(dma_config, 1, 0).unwrap();
+
+    let mut adc_config = adc::AdcConfig::new();
+    adc_config.set_as_dma();
+    let mut adc = adc::Adc::new(adc_config, 1).unwrap();
+    adc.new_regular_channel(csdk::ADC_CHANNEL_VREFINT).unwrap();
+
+    let mut data: [u32; 1] = [3; 1];
+    adc.start_dma(&mut data).unwrap();
+    
+    unsafe{ csdk::HAL_Delay(10); }
+    defmt::println!("adc dma value  {}", data);
 }

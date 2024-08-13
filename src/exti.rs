@@ -5,7 +5,6 @@
 // https://github.com/embassy-rs/embassy/commit/65c085ce910f50903bc5c41ca82eda989810f855
 use core::convert::Infallible;
 use core::future::Future;
-use core::marker::PhantomData;
 use core::pin::Pin;
 use core::sync::atomic::{AtomicU16, Ordering};
 use core::task::{Context, Poll};

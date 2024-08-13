@@ -5,12 +5,12 @@
 
 use crate::csdk;
 
-pub struct Rcc{
+pub struct RccConfig{
     pub osc_init: csdk::RCC_OscInitTypeDef,
     pub clk_init: csdk::RCC_ClkInitTypeDef,
 }
 
-impl Default for Rcc {
+impl Default for RccConfig {
     fn default() -> Self {
         Self {
             osc_init: csdk::RCC_OscInitTypeDef {
@@ -43,7 +43,7 @@ impl Default for Rcc {
     }
 }
 
-impl Rcc {
+impl RccConfig {
     pub fn new_from_csdk(osc_init: csdk::RCC_OscInitTypeDef,
         clk_init: csdk::RCC_ClkInitTypeDef
     ) -> Self {
@@ -73,7 +73,7 @@ impl Rcc {
 
 #[cfg(feature = "py32f030")]
 pub fn into_48_mhz_hsi() -> Result<(), crate::Error> {
-    let mut rcc = Rcc::new();
+    let mut rcc = RccConfig::new();
     rcc.osc_init.HSICalibrationValue = unsafe { csdk::RCC_GET_HSICALIBRATION_24MHz() };
     rcc.osc_init.PLL.PLLState = csdk::RCC_PLL_ON;
     rcc.apply()
@@ -81,7 +81,7 @@ pub fn into_48_mhz_hsi() -> Result<(), crate::Error> {
 
 #[cfg(feature = "py32f030")]
 pub fn into_32_mhz_hsi() -> Result<(), crate::Error> {
-    let mut rcc = Rcc::new();
+    let mut rcc = RccConfig::new();
     rcc.osc_init.HSICalibrationValue = unsafe { csdk::RCC_GET_HSICALIBRATION_16MHz() };
     rcc.osc_init.PLL.PLLState = csdk::RCC_PLL_ON;
     rcc.apply()
@@ -89,7 +89,7 @@ pub fn into_32_mhz_hsi() -> Result<(), crate::Error> {
 
 #[cfg(feature = "py32f030")]
 pub fn into_8_mhz_hsi() -> Result<(), crate::Error> {
-    let mut rcc = Rcc::new();
+    let mut rcc = RccConfig::new();
     rcc.osc_init.HSICalibrationValue = unsafe { csdk::RCC_GET_HSICALIBRATION_8MHz() };
     rcc.osc_init.PLL.PLLState = csdk::RCC_PLL_OFF;
     rcc.apply()
@@ -97,10 +97,16 @@ pub fn into_8_mhz_hsi() -> Result<(), crate::Error> {
 
 #[cfg(feature = "py32f030")]
 pub fn into_1_mhz_hsi() -> Result<(), crate::Error> {
-    let mut rcc = Rcc::new();
+    let mut rcc = RccConfig::new();
     rcc.osc_init.HSICalibrationValue = unsafe { csdk::RCC_GET_HSICALIBRATION_8MHz() };
     rcc.osc_init.PLL.PLLState = csdk::RCC_PLL_OFF;
     rcc.osc_init.HSIDiv = csdk::RCC_HSI_DIV8;
     rcc.clk_init.SYSCLKSource = csdk::RCC_SYSCLKSOURCE_HSI;
     rcc.apply()
+}
+
+pub fn get_sys_freq() -> u32 {
+    unsafe {
+        csdk::HAL_RCC_GetSysClockFreq()
+    }
 }

@@ -8,6 +8,34 @@ The project uses the vendor-provided C SDK and operates peripherals through bind
 
 Users can also directly use FFI to perform complex operations without manipulating registers.
 
+PY32 HAL
+
+| Peripherals/Functions | Bindings | Easy-to-use func   | Embedded-Hal |
+| --------------------- | -------- | ------------------ | ------------ |
+| GPIO                  | ✔        | ✔                  | ✔            |
+| RCC                   | ✔        | ✔                  | ✖            |
+| Power                 | ✔        | ✔(only sleep/stop) | ✖            |
+| PWM/TIMER             | ✔        |                    |              |
+| RTC                   | ✔        |                    |              |
+|                       |          |                    |              |
+
+| Peripherals/Functions | Bindings | Easy-to-use func | Embedded-Hal | Embedded-Async | Polling | DMA  | IT   |
+| --------------------- | -------- | ---------------- | ------------ | -------------- | ------- | ---- | ---- |
+| EXTI                  | ✔        | ✔                | ✔            | ✔              |         | ✖    | ✔    |
+| I2C                   | ✔        | ✔                | ✔            |                | ✔       |      |      |
+| ADC                   | ✔        | ✔(only polling)              |              |                |         |      | ✔     |
+| USART                 | ✔        | WIP              |              |                |         |      |      |
+| SPI                   | ✔        |                  |              |                |         |      |      |
+| LED                   | ✔        |                  |              |                |         |      |      |
+|                       |          |                  |              |                |         |      |      |
+
+Others:
+
+| Interrupt(cortex-m-rt) | Embassy Time-Driver | HAL-Ticks |
+| ---------------------- | ------------------- | --------- |
+
+
+
 ### Why use bindings?
 
 Taking STM32 as an example, there are many excellent HALs available: [embassy](https://github.com/embassy-rs/embassy)   [stm32-rs](https://github.com/stm32-rs)

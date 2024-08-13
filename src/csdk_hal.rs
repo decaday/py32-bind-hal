@@ -1,5 +1,4 @@
 use cortex_m_rt::exception;
-use embedded_hal::i2c::Operation;
 
 use crate::csdk;
 

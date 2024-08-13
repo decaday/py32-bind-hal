@@ -112,6 +112,49 @@ impl ExtiInput {
         }
     }
 
+    pub fn set_as_it(&mut self, rising: bool, falling: bool) {
+        critical_section::with(|_| {
+            let mut gpio_mode = csdk::GPIO_MODE_IT_RISING_FALLING;
+            if rising & falling {
+                gpio_mode = csdk::GPIO_MODE_IT_RISING_FALLING;
+            }
+            else if rising & (!falling) {
+                gpio_mode = csdk::GPIO_MODE_IT_RISING;
+            }
+            else if (!rising) & falling {
+                gpio_mode = csdk::GPIO_MODE_IT_FALLING;
+            };
+            self.pin.c_init_type.Mode = gpio_mode;
+            
+            unsafe {
+                csdk::HAL_GPIO_Init(self.pin.port,
+                    &mut self.pin.c_init_type as *mut csdk::GPIO_InitTypeDef);
+            }
+        });
+    }
+
+    pub fn set_as_event(&mut self, rising: bool, falling: bool) {
+        critical_section::with(|_| {
+            let mut gpio_mode = csdk::GPIO_MODE_EVT_RISING_FALLING;
+            if rising & falling {
+                gpio_mode = csdk::GPIO_MODE_EVT_RISING_FALLING;
+            }
+            else if rising & (!falling) {
+                gpio_mode = csdk::GPIO_MODE_EVT_RISING;
+            }
+            else if (!rising) & falling {
+                gpio_mode = csdk::GPIO_MODE_EVT_FALLING;
+            };
+            self.pin.c_init_type.Mode = gpio_mode;
+            
+            unsafe {
+                csdk::HAL_GPIO_Init(self.pin.port,
+                    &mut self.pin.c_init_type as *mut csdk::GPIO_InitTypeDef);
+            }
+        });
+    }
+
+
     /// Get whether the pin is high.
     pub fn is_high(&self) -> bool {
         self.pin.is_high()
@@ -131,7 +174,8 @@ impl ExtiInput {
     ///
     /// This returns immediately if the pin is already high.
     pub async fn wait_for_high(&mut self) {
-        let fut = ExtiInputFuture::new(self.pin.clone(), true, false);
+        self.set_as_it(true, false);
+        let fut = ExtiInputFuture::new(self.pin.pin);
         if self.is_high() {
             return;
         }
@@ -142,7 +186,8 @@ impl ExtiInput {
     ///
     /// This returns immediately if the pin is already low.
     pub async fn wait_for_low(&mut self) {
-        let fut = ExtiInputFuture::new(self.pin.clone(), false, true);
+        self.set_as_it(false, true);
+        let fut = ExtiInputFuture::new(self.pin.pin);
         if self.is_low() {
             return;
         }
@@ -153,19 +198,22 @@ impl ExtiInput {
     ///
     /// If the pin is already high, it will wait for it to go low then back high.
     pub async fn wait_for_rising_edge(&mut self) {
-        ExtiInputFuture::new(self.pin.clone(), true, false).await
+        self.set_as_it(true, false);
+        ExtiInputFuture::new(self.pin.pin).await
     }
 
     /// Asynchronously wait until the pin sees a falling edge.
     ///
     /// If the pin is already low, it will wait for it to go high then back low.
     pub async fn wait_for_falling_edge(&mut self) {
-        ExtiInputFuture::new(self.pin.clone(), false, true).await
+        self.set_as_it(false, true);
+        ExtiInputFuture::new(self.pin.pin).await
     }
 
     /// Asynchronously wait until the pin sees any edge (either rising or falling).
     pub async fn wait_for_any_edge(&mut self) {
-        ExtiInputFuture::new(self.pin.clone(), true, true).await
+        self.set_as_it(true, true);
+        ExtiInputFuture::new(self.pin.pin).await
     }
 }
 
@@ -223,50 +271,30 @@ impl embedded_hal_async::digital::Wait for ExtiInput {
 }
 
 #[must_use = "futures do nothing unless you `.await` or poll them"]
-struct ExtiInputFuture<'a> {
-    pin: AnyPin,
-    phantom: PhantomData<&'a mut AnyPin>,
+struct ExtiInputFuture {
+    pin: u16,
 }
 
-impl<'a> ExtiInputFuture<'a> {
-    fn new(mut pin: AnyPin, rising: bool, falling: bool) -> Self {
-        critical_section::with(|_| {
-            let mut gpio_mode = csdk::GPIO_MODE_IT_RISING_FALLING;
-            if rising & falling {
-                gpio_mode = csdk::GPIO_MODE_IT_RISING_FALLING;
-            }
-            else if rising & (!falling) {
-                gpio_mode = csdk::GPIO_MODE_IT_RISING;
-            }
-            else if (!rising) & falling {
-                gpio_mode = csdk::GPIO_MODE_IT_FALLING;
-            };
-            pin.c_init_type.Mode = gpio_mode;
-            
-            unsafe {
-                csdk::HAL_GPIO_Init(pin.port,
-                                    &mut pin.c_init_type as *mut csdk::GPIO_InitTypeDef);
-            }
-        });
+impl ExtiInputFuture {
+    fn new(pin: u16) -> Self {
 
-        let flags = EXTI_FLAGS.load(Ordering::Relaxed) & (!pin.pin);
+        let flags = EXTI_FLAGS.load(Ordering::Relaxed) & (!pin);
         EXTI_FLAGS.store(flags, Ordering::Relaxed);
 
         Self {
             pin,
-            phantom: PhantomData,
         }
     }
 }
 
 
-impl<'a> Future for ExtiInputFuture<'a> {
+impl Future for ExtiInputFuture {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        EXTI_WAKERS[self.pin.pin.trailing_zeros() as usize].register(cx.waker());
+        EXTI_WAKERS[self.pin.trailing_zeros() as usize].register(cx.waker());
         let flags = EXTI_FLAGS.load(Ordering::Relaxed) as u32;
-        if (flags & self.pin.pin as u32) != 0 {
+        if (flags & self.pin as u32) != 0 {
             Poll::Ready(())
         } else {
             Poll::Pending

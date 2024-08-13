@@ -34,6 +34,13 @@ unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum Error{
+    Error,
+    Busy,
+    Timeout,
+}
+
 pub fn init(){
     crate::csdk_hal::init();
     #[cfg(feature = "embassy")]
@@ -74,6 +81,8 @@ pub mod power;
 pub mod i2c;
 
 pub mod exti;
+
+pub mod rcc;
 
 pub mod csdk_hal;
 

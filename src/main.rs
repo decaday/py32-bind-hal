@@ -11,31 +11,24 @@ use embedded_hal::{self as embedded_hal_1, i2c::I2c};
 use embassy_executor::Spawner;
 use embassy_time::Timer;
 
-use bind_hal::gpio;
-use bind_hal::csdk;
-use bind_hal::power;
-use bind_hal::i2c;
-use bind_hal::exti;
-use bind_hal::csdk_hal;
+use bind_hal::{csdk, gpio, power, i2c, exti, rcc};
 
 
-#[embassy_executor::main(entry = "cortex_m_rt::entry")]
+#[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
     bind_hal::init();
     defmt::println!("Hello, world!  1");
     init_pb3();
     defmt::println!("Hello, world!  2");
-    // bind_hal::exit();
-    // i2c_test();
-    exti_test().await;
-    // defmt::println!("Hello, world!  3");
-    // exti_test().await;
-    // defmt::println!("Hello, world!  4");
-    unsafe{
-        let imr_value = (*csdk::EXTI).IMR;
-        defmt::println!("IMR: {:X}", imr_value);
-    }
+    rcc_test();
 
+    // i2c_test();
+    // exti_test().await;
+    
+    // unsafe{
+    //     let imr_value = (*csdk::EXTI).IMR;
+    //     defmt::println!("IMR: {:X}", imr_value);
+    // }
 
     loop {
         // defmt::println!("Hello World! n");
@@ -45,7 +38,6 @@ async fn main(_spawner: Spawner) -> ! {
 
 
 fn init_pb3() {
-    csdk_hal::init();
     let mut pin = gpio::AnyPin::new_from_csdk(csdk::GPIOB, csdk::GPIO_PIN_3);
     pin.set_as_output(gpio::Speed::High);
     pin.set_high();
@@ -81,7 +73,16 @@ async fn exti_test() {
         gpio::Pull::None, 
         gpio::Speed::High);
     pin.wait_for_any_edge().await;
-    defmt::println!("Hello, world!  3");
+    defmt::println!("wait_for_any_edge  1");
     pin.wait_for_any_edge().await;
-    defmt::println!("Hello, world!  4");
+    defmt::println!("wait_for_any_edge  2");
+}
+
+fn rcc_test() {
+    rcc::into_48_mhz_hsi().unwrap();
+
+    unsafe {
+        let freq = csdk::HAL_RCC_GetSysClockFreq();
+        defmt::println!("HAL_RCC_GetSysClockFreq  {}", freq);
+    }
 }

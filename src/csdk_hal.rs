@@ -16,3 +16,15 @@ fn SysTick(){
     #[cfg(feature = "embassy")]
     crate::time_driver::on_interrupt();
 }
+
+impl From<csdk::HAL_StatusTypeDef> for crate::Error {
+    fn from(status: csdk::HAL_StatusTypeDef) -> Self {
+        match status {
+            csdk::HAL_StatusTypeDef_HAL_ERROR => crate::Error::Error,
+            csdk::HAL_StatusTypeDef_HAL_BUSY => crate::Error::Busy,
+            csdk::HAL_StatusTypeDef_HAL_TIMEOUT => crate::Error::Timeout,
+            csdk::HAL_StatusTypeDef_HAL_OK => panic!(),
+            _ => panic!(),
+        }
+    }
+}

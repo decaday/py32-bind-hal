@@ -1,4 +1,5 @@
 use cortex_m_rt::exception;
+use embedded_hal::i2c::Operation;
 
 use crate::csdk;
 
@@ -26,5 +27,12 @@ impl From<csdk::HAL_StatusTypeDef> for crate::Error {
             csdk::HAL_StatusTypeDef_HAL_OK => panic!(),
             _ => panic!(),
         }
+    }
+}
+
+pub fn check(operation: csdk::HAL_StatusTypeDef) -> Result<(), crate::Error> {
+    match operation {
+        csdk::HAL_StatusTypeDef_HAL_OK => Ok(()),
+        err => Err(err.into()),
     }
 }

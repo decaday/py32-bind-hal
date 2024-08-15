@@ -23,7 +23,14 @@ use crate::csdk;
 const EXTI_COUNT: usize = 16;
 const NEW_AW: AtomicWaker = AtomicWaker::new();
 static EXTI_WAKERS: [AtomicWaker; EXTI_COUNT] = [NEW_AW; EXTI_COUNT];
-static EXTI_FLAGS: AtomicU16 = AtomicU16::new(0);
+
+/// Each bit of this flag corresponds to a channel. 
+/// 0 means waiting for interrupt, 2 means already awake
+static EXTI_POLL_FLAGS: AtomicU16 = AtomicU16::new(0);
+
+/// Each bit of this flag corresponds to a channel. 
+/// 0 means not using Async, 1 means using Async
+static EXTI_ASYNC_FLAGS: AtomicU16 = AtomicU16::new(0);
 
 unsafe fn on_irq() {
     let bits: u32 = (*csdk::EXTI).PR;
@@ -31,16 +38,22 @@ unsafe fn on_irq() {
     // We don't handle or change any EXTI lines above 16.
     let bits = bits & 0x0000FFFF;
 
-    // thembv6m has not fetch_or
-    let new_flags = ( EXTI_FLAGS.load(Ordering::Relaxed) as u32 | bits ) as u16; 
-    EXTI_FLAGS.store(new_flags, Ordering::Relaxed);
+    let async_flags = EXTI_ASYNC_FLAGS.load(Ordering::Relaxed) as u32;
+    if ( async_flags & bits ) != 0 {
+        // thembv6m has not fetch_or
+        let new_flags = ( EXTI_POLL_FLAGS.load(Ordering::Relaxed) as u32 | bits ) as u16; 
+        EXTI_POLL_FLAGS.store(new_flags, Ordering::Relaxed);
 
-    // Mask all the channels that fired.
-    (*csdk::EXTI).IMR &= !bits;
+        // Mask all the channels that fired.
+        (*csdk::EXTI).IMR &= !bits;
 
-    // Wake the tasks
-    for pin in BitIter(bits) {
-        EXTI_WAKERS[pin as usize].wake();
+        // Wake the tasks
+        for pin in BitIter(bits) {
+            EXTI_WAKERS[pin as usize].wake();
+        }
+
+        let async_flags = ( EXTI_ASYNC_FLAGS.load(Ordering::Relaxed) as u32 & (!bits) ) as u16;
+        EXTI_ASYNC_FLAGS.store(async_flags, Ordering::Relaxed);
     }
 
     // Clear the EXTI's line pending bits
@@ -277,8 +290,11 @@ struct ExtiInputFuture {
 impl ExtiInputFuture {
     fn new(pin: u16) -> Self {
 
-        let flags = EXTI_FLAGS.load(Ordering::Relaxed) & (!pin);
-        EXTI_FLAGS.store(flags, Ordering::Relaxed);
+        let poll_flags = EXTI_POLL_FLAGS.load(Ordering::Relaxed) & (!pin);
+        EXTI_POLL_FLAGS.store(poll_flags, Ordering::Relaxed);
+
+        let async_flags = EXTI_ASYNC_FLAGS.load(Ordering::Relaxed) | pin; 
+        EXTI_ASYNC_FLAGS.store(async_flags, Ordering::Relaxed);
 
         Self {
             pin,
@@ -292,7 +308,7 @@ impl Future for ExtiInputFuture {
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         EXTI_WAKERS[self.pin.trailing_zeros() as usize].register(cx.waker());
-        let flags = EXTI_FLAGS.load(Ordering::Relaxed) as u32;
+        let flags = EXTI_POLL_FLAGS.load(Ordering::Relaxed) as u32;
         if (flags & self.pin as u32) != 0 {
             Poll::Ready(())
         } else {

@@ -24,8 +24,8 @@ async fn main(_spawner: Spawner) -> ! {
     // adc_blocking_test();
     adc_dma_test();
 
-    // i2c_test();
-    // exti_test().await;
+    i2c_test();
+    exti_test().await;
     
     // unsafe{
     //     let imr_value = (*csdk::EXTI).IMR;
@@ -103,21 +103,16 @@ fn adc_dma_test() {
     let dma_config = dma::Config::new_peri_to_mem();
     let mut dma_channel = dma::DmaChannel::new(dma_config, 1, 0).unwrap();
 
-    // defmt::println!("test dma state {}", dma_channel.handle.State);
-
     let mut adc_config = adc::AdcConfig::new();
     adc_config.set_as_dma();
     let mut adc = adc::Adc::new_dma(adc_config, 1, &mut dma_channel).unwrap();
     adc.new_regular_channel(csdk::ADC_CHANNEL_VREFINT).unwrap();
 
-    defmt::println!("test dma state {}", dma_channel.handle.State);
 
     let mut data: [u32; 1] = [3; 1];
     adc.start_dma(&mut data).unwrap();
     
     unsafe { csdk::HAL_Delay(100); }
-
-    defmt::println!("tes error {}", adc.handle.ErrorCode);
     defmt::println!("adc dma value  {}", data);
     unsafe { csdk::HAL_Delay(100); }
     defmt::println!("adc dma value  {}", data);

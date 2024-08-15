@@ -135,6 +135,7 @@ unsafe fn DMA1_CHANNEL2_3() {
 }
 
 unsafe fn on_irq() {
+    // WIP
     let isr = (*csdk::DMA1).ISR;
 
     let channel_id = if (isr & 1 ) != 0 { 

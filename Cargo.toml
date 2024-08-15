@@ -2,7 +2,7 @@
 authors = ["decaday <myDecaday@outlook.com>"]
 name = "bind-hal"
 edition = "2021"
-version = "0.2.2"
+version = "0.3.0"
 build = "build.rs"
 license-file = "LICENSE"
 description = "MCU HALs using binding, currently supports PY32"
@@ -20,13 +20,12 @@ harness = false
 [dependencies]
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7"
-defmt-rtt = "0.4"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
-# cortex-m-semihosting = { version = "0.5", features = ["no-semihosting"] }
-
-
-# thiserror = "1.0"
 cortex-m-semihosting = { version = "0.5" }
+defmt-rtt = "0.4"
+defmt = { version = "0.3", optional = true }
+
+
 critical-section = { version = "1.1" }
 
 embassy-sync = { version = "0.6.0", optional = true }
@@ -37,41 +36,43 @@ embassy-time-driver = { version = "0.1.0", features = [
 embassy-time = { version = "0.3.0", features = [
     "tick-hz-1_000",
 ], optional = true }
-futures-util = { version = "0.3.30", default-features = false }
-
-embedded-hal = "1.0.0-alpha.11"
-embedded-hal-async = "1.0"
-
-py32csdk-hal-sys = "0.2.0"
-defmt = { version = "0.3", optional = true }
 embassy-executor = { version = "0.5", features = [
     "nightly",
     "integrated-timers",
     "arch-cortex-m",
     "executor-thread",
 ] }
+futures-util = { version = "0.3.30", default-features = false }
+
+embedded-hal = "1.0.0-alpha.11"
+embedded-hal-async = "1.0"
+
+py32csdk-hal-sys = "0.3.0"
 
 
 [features]
-default = ["py32f030", "embassy", "time", "defmt"]
+default = ["py32f030", "ram_rom_py32xxx6", "embassy", "time", "defmt", "auto_memory_x"]
 
 embassy = [
     "dep:embassy-sync",
     "dep:embassy-futures",
     "dep:embassy-time-driver",
-    "dep:embassy-time",
 ]
 time = [
     "dep:embassy-time",
 ]
 defmt = ["dep:defmt", "embassy-sync/defmt", "embassy-time?/defmt"]
 
+auto_memory_x = []
 
 py32f030 = [
     "py32csdk-hal-sys/py32f030", "csdk-hal",
     "peri-gpioa", "peri-gpiob", "peri-gpiof",
     "peri-i2c", "peri-i2c0", "peri-dma"
 ]
+ram_rom_py32xxx6 = ["py32csdk-hal-sys/py32xxx6"]
+ram_rom_py32xxx8 = ["py32csdk-hal-sys/py32xxx8"]
+ram_rom_py32f002ax5 = []
 csdk-hal = []
 
 peri-gpioa = []

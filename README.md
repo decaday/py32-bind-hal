@@ -23,11 +23,15 @@ PY32 HAL
 | --------------------- | -------- | ---------------- | ------------ | -------------- | ------- | ---- | ---- |
 | EXTI                  | ✔        | ✔                | ✔            | ✔              | ✖ | ✖   | ✔    |
 | I2C                   | ✔        | ✔                | ✔            |                | ✔       |      |      |
-| ADC                   | ✔        | ✔(only polling)              |              |                | ✔ | ✔ |      |
+| ADC                   | ✔        | ✔(only polling)              | ✖ | ✖ | ✔ | ✔ |      |
 | USART                 | ✔        | WIP              |              |                |         |      |      |
 | SPI                   | ✔        |                  |              |                |         |      |      |
 | LED                   | ✔        |                  |              |                |         |      |      |
 |                       |          |                  |              |                |         |      |      |
+
+✖: mcu or embedded-hal not support
+
+WIP: work in progress
 
 Others:
 

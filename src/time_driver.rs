@@ -1,5 +1,6 @@
 //! SysTick-based time driver.
-//! modified from https://github.com/ch32-rs/ch32-hal/blob/main/src/embassy/time_driver_systick.rs
+
+// modified from https://github.com/ch32-rs/ch32-hal/blob/main/src/embassy/time_driver_systick.rs
 
 use core::cell::Cell;
 use core::sync::atomic::{AtomicU32, AtomicU8, Ordering};

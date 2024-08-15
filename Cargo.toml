@@ -2,7 +2,7 @@
 authors = ["decaday <myDecaday@outlook.com>"]
 name = "bind-hal"
 edition = "2021"
-version = "0.3.1"
+version = "0.3.2"
 build = "build.rs"
 license-file = "LICENSE"
 description = "MCU HALs using binding, currently supports PY32"
@@ -47,7 +47,7 @@ futures-util = { version = "0.3.30", default-features = false }
 embedded-hal = "1.0.0-alpha.11"
 embedded-hal-async = "1.0"
 
-py32csdk-hal-sys = "0.3.0"
+py32csdk-hal-sys = "0.4.0"
 
 
 [features]
@@ -87,6 +87,8 @@ peri-i2c1 = []
 peri-i2c2 = []
 peri-dma = []
 
+[package.metadata.docs.rs]
+default-target = "thumbv6m-none-eabi"
 
 
 [patch.crates-io]

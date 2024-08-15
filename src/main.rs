@@ -24,7 +24,7 @@ async fn main(_spawner: Spawner) -> ! {
     // adc_blocking_test();
     adc_dma_test();
 
-    i2c_test();
+    // i2c_test();
     exti_test().await;
     
     // unsafe{

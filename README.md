@@ -8,7 +8,15 @@ The project uses the vendor-provided C SDK and operates peripherals through bind
 
 Users can also directly use FFI to perform complex operations without manipulating registers.
 
-PY32 HAL
+## Supported MCU:
+
+### ---PY32F0xx Series---
+
+**Puya** PY32F002A, PY32F003, PY32F030
+
+**Xinlinggo** XL32F003*, XL32F002A*
+
+**Luat** AIR001
 
 | Peripherals/Functions | Bindings | Easy-to-use func   | Embedded-Hal |
 | --------------------- | -------- | ------------------ | ------------ |
@@ -17,7 +25,7 @@ PY32 HAL
 | Power                 | ✔        | ✔(only sleep/stop) | ✖            |
 | PWM/TIMER             | ✔        |                    |              |
 | RTC                   | ✔        |                    |              |
-|                       |          |                    |              |
+| WDG                   | ✔        |                    |              |
 
 | Peripherals/Functions | Bindings | Easy-to-use func | Embedded-Hal | Embedded-Async | Polling | DMA  | IT   |
 | --------------------- | -------- | ---------------- | ------------ | -------------- | ------- | ---- | ---- |
@@ -40,11 +48,9 @@ Others:
 
 
 
-### Why use bindings?
+## Why use bindings?
 
 Taking STM32 as an example, there are many excellent HALs available: [embassy](https://github.com/embassy-rs/embassy)   [stm32-rs](https://github.com/stm32-rs)
-
-
 
 This crate’s performance, ROM, and RAM usage are far inferior to these HALs. 
 
@@ -54,7 +60,10 @@ This crate requires little maintenance and does not require dealing with registe
 
 
 
-In the near future, this crate will primarily update SDKs for microcontrollers similar to `STM32 HAL CSDK` or `STM32 StdLib CSDK` aiming to reuse code on similar SDKs.
+In the near future, this crate will primarily update SDKs for microcontrollers similar to `STM32 HAL CSDK`  aiming to reuse code on similar SDKs.
 
-The CSDK and bindings for py32 are maintained here: [py32csdk-hal-sys](https://github.com/decaday/py32csdk-hal-sys), and this package already includes precompiled static library file and `bindings.rs` for quick use. However, if you want to recompile and generate bindings, it will be very troublesome. You need to enable the `recompile` feature.
+## py32csdk-hal-sys
 
+The CSDK and bindings for py32 are maintained here: [py32csdk-hal-sys](https://github.com/decaday/py32csdk-hal-sys), and this package already includes precompiled static library file and `bindings.rs` for quick use. However, if you want to recompile and generate bindings, it will be troublesome, please check its Docs. You need to enable the `recompile` feature.
+
+## 

@@ -8,7 +8,7 @@ use crate::csdk_hal::check;
 use crate::dma;
 
 pub struct Adc {
-    handle: csdk::ADC_HandleTypeDef,
+    pub handle: csdk::ADC_HandleTypeDef,
     timeout_ticks: u32,
 }
 
@@ -47,7 +47,7 @@ impl AdcConfig {
 
     pub fn set_as_dma(&mut self) {
         self.init.DMAContinuousRequests = csdk::FunctionalState_ENABLE;
-        self.init.DiscontinuousConvMode = csdk::FunctionalState_ENABLE;
+        self.init.DiscontinuousConvMode = csdk::FunctionalState_DISABLE;
         self.init.ContinuousConvMode = csdk::FunctionalState_ENABLE;
     }
 
@@ -64,7 +64,7 @@ impl Adc {
         Ok(adc)
     }
 
-    pub fn new_dma(config: AdcConfig, instance_num: u8, mut dma: dma::DmaChannel) -> Result<Self, crate::Error> {
+    pub fn new_dma(config: AdcConfig, instance_num: u8, dma: &mut dma::DmaChannel) -> Result<Self, crate::Error> {
         let mut adc = Self::new_inner(config, instance_num);
         dma.link(&mut adc);
         adc.init_inner()?;

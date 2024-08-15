@@ -52,5 +52,5 @@ This crate requires little maintenance and does not require dealing with registe
 
 In the near future, this crate will primarily update SDKs for microcontrollers similar to `STM32 HAL CSDK` or `STM32 StdLib CSDK` aiming to reuse code on similar SDKs.
 
-The CSDK and bindings for py32 are maintained here: [py32csdk-hal-sys](https://github.com/decaday/py32csdk-hal-sys), and this package already includes precompiled stastic library file and `bindings.rs` for quick use. However, if you want to recompile and generate bindings, it will be very troublesome. You need to enable the `recompile` feature.
+The CSDK and bindings for py32 are maintained here: [py32csdk-hal-sys](https://github.com/decaday/py32csdk-hal-sys), and this package already includes precompiled static library file and `bindings.rs` for quick use. However, if you want to recompile and generate bindings, it will be very troublesome. You need to enable the `recompile` feature.
 

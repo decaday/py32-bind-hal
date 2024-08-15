@@ -2,6 +2,10 @@ use core::ffi::c_void;
 
 use crate::csdk;
 use crate::csdk_hal::check;
+use crate::csdk::interrupts::interrupt;
+
+const DMA_CHANNEL_COUNT: usize = 16;
+static mut DMA_CHANNELS: [Option<*mut csdk::DMA_HandleTypeDef>; DMA_CHANNEL_COUNT] = [None; DMA_CHANNEL_COUNT];
 
 pub struct DmaChannel {
     pub handle: csdk::DMA_HandleTypeDef,
@@ -70,6 +74,8 @@ impl DmaChannel {
         };
         
         unsafe {
+            csdk::HAL_RCC_DMA_CLK_ENABLE();
+
             handle.Instance = match channel {
                 1 => {
                     (*csdk::SYSCFG).CFGR3 &= !(0b11111);
@@ -88,10 +94,19 @@ impl DmaChannel {
                 },
                 _ => panic!(),
             };
+            // defmt::println!("cfgr3:{:#b}", (*csdk::SYSCFG).CFGR3);
 
-            check(csdk::HAL_DMA_DeInit(&mut handle))?;
-            check(csdk::HAL_DMA_Init(&mut handle))?;
+            
+            handle.State = csdk::HAL_DMA_StateTypeDef_HAL_DMA_STATE_READY;
+            // check(csdk::HAL_DMA_DeInit(&mut handle))?;
+            defmt::println!("dma state 1 {} {} {}", handle.State, 1, handle.ErrorCode);
+            // handle.ErrorCode = 100;
+            
+            let result = csdk::HAL_DMA_Init(&mut handle);
+            // check()?;
+            defmt::println!("dma state 2 {} {} {}", handle.State, result, handle.ErrorCode);
         }
+        
         Ok(Self { handle })
     }
 
@@ -104,6 +119,39 @@ impl DmaChannel {
 
 pub trait HasDmaField {
     fn set_dma_field(&mut self, dma_handle: &mut DmaChannel);
-    
+
     fn get_handle_ptr(&mut self) -> *mut c_void;
+}
+
+
+#[interrupt]
+unsafe fn DMA1_CHANNEL1() {
+    on_irq();
+}
+
+#[interrupt]
+unsafe fn DMA1_CHANNEL2_3() {
+    on_irq();
+}
+
+unsafe fn on_irq() {
+    let isr = (*csdk::DMA1).ISR;
+
+    let channel_id = if (isr & 1 ) != 0 { 
+        Some(0) 
+    } else if ( isr & (1 << 4) ) != 0 { 
+        Some(1)
+    } else if ( isr & (1 << 8) ) != 0 { 
+        Some(2)
+    } else {
+        None
+    };
+    defmt::println!("channel_id: {}", channel_id);
+    match channel_id {
+        Some(id) => match DMA_CHANNELS[id] {
+            Some(ptr) => csdk::HAL_DMA_IRQHandler(ptr),
+            None => (),
+        },
+        None => (),
+    }
 }

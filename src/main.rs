@@ -13,19 +13,18 @@ use embassy_time::Timer;
 
 use bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc, dma};
 
-
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
     bind_hal::init();
     defmt::println!("Hello, world!  1");
     init_pb3();
     defmt::println!("Hello, world!  2");
-    rcc_test();
+    // rcc_test();
     // adc_blocking_test();
-    adc_dma_test();
+    // adc_dma_test();
 
     // i2c_test();
-    exti_test().await;
+    // exti_test().await;
     
     // unsafe{
     //     let imr_value = (*csdk::EXTI).IMR;
@@ -60,10 +59,12 @@ fn i2c_test() {
     let mut config: i2c::Config = Default::default();
     config.own_address1 = 0x58;
     let mut i2c1 = i2c::I2c::new_blocking(config).unwrap();
+    unsafe { defmt::println!("SR1  {:?}", (*csdk::I2C).SR1) };
+    unsafe { defmt::println!("SR2  {:?}", (*csdk::I2C).SR2) };
     let data: [u8; 5] = [3; 5];
+    i2c1.write(0x53, &data).unwrap();
     loop{
-        i2c1.write(0x53, &data).unwrap();
-        unsafe {
+        unsafe {   
             csdk::HAL_Delay(100);
         }
     }
@@ -83,10 +84,8 @@ async fn exti_test() {
 fn rcc_test() {
     rcc::into_48_mhz_hsi().unwrap();
 
-    unsafe {
-        let freq = csdk::HAL_RCC_GetSysClockFreq();
-        defmt::println!("HAL_RCC_GetSysClockFreq  {}", freq);
-    }
+    let freq = rcc::get_sys_clock_freq();
+    defmt::println!("HAL_RCC_GetSysClockFreq  {}", freq);
 }
 
 fn adc_blocking_test() {

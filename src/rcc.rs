@@ -105,7 +105,7 @@ pub fn into_1_mhz_hsi() -> Result<(), crate::Error> {
     rcc.apply()
 }
 
-pub fn get_sys_freq() -> u32 {
+pub fn get_sys_clock_freq() -> u32 {
     unsafe {
         csdk::HAL_RCC_GetSysClockFreq()
     }

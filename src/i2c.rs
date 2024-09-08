@@ -91,7 +91,7 @@ impl Default for Config {
 pub struct I2c<M: Mode> {
     // scl: gpio::AnyPin,
     // sda: gpio::AnyPin,
-    handle: csdk::I2C_HandleTypeDef,
+    pub handle: csdk::I2C_HandleTypeDef,
     /// Timeout.
     #[cfg(feature = "time")]
     pub timeout: embassy_time::Duration,
@@ -200,10 +200,15 @@ impl<M: Mode> I2c<M> {
                 },
                 _ => Err(Error::Csdk),
             }?;
+            // unsafe { defmt::println!("i2c init state  {:?}", self.handle.State) };
+            // unsafe { defmt::println!("i2c init  {:?}", csdk::HAL_I2C_Init(&mut self.handle)) };
+            // unsafe { defmt::println!("i2c init state  {:?}", self.handle.State) };
+            // unsafe { defmt::println!("i2c init or1  {:?}", (*self.handle.Instance).CR1) };
             match csdk::HAL_I2C_Init(&mut self.handle) {
                 csdk::HAL_StatusTypeDef_HAL_OK => Ok(()),
                 _ => Err(Error::Csdk),
             }
+            // Ok(())
         }
     }
 

@@ -64,6 +64,7 @@ time = [
 defmt = ["dep:defmt", "embassy-sync/defmt", "embassy-time?/defmt"]
 
 auto_memory_x = []
+recompile = ["py32csdk-hal-sys/recompile"]
 
 py32f030 = [
     "py32csdk-hal-sys/py32f030", "csdk-hal",

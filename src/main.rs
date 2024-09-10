@@ -58,7 +58,7 @@ fn i2c_test() {
     sda.set_as_af_od(csdk::GPIO_AF12_I2C, gpio::Pull::Up, gpio::Speed::VeryHigh);
 
     let mut config: i2c::Config = Default::default();
-    config.own_address1 = 0x58;
+    config.init.OwnAddress1 = 0x58;
     config.timeout = Duration::from_millis(2000);
     let mut i2c1 = i2c::I2c::new_blocking(config).unwrap();
     unsafe { defmt::println!("SR1  {:?}", (*csdk::I2C).SR1) };

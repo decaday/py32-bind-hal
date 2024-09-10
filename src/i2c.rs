@@ -50,21 +50,7 @@ pub enum Error {
 #[non_exhaustive]
 #[derive(Copy, Clone)]
 pub struct Config {
-    /// Specifies the clock frequency.
-    /// This parameter must be set to a value lower than 400kHz
-    pub clock_speed: u32,
-    /// Specifies the I2C fast mode duty cycle.
-    /// his parameter can be a value of @ref I2C_duty_cycle_in_fast_mode
-    pub duty_cycle: u32,
-    /// Specifies the first device own address.
-    /// This parameter can be a 7-bit or 10-bit address.
-    pub own_address1: u32,
-    /// Specifies if general call mode is selected.
-    /// This parameter can be a value of @ref I2C_general_call_addressing_mode */
-    pub general_call_mode: u32,
-    /// Specifies if nostretch mode is selected.
-    /// This parameter can be a value of @ref I2C_nostretch_mode
-    pub no_stretch_mode: u32,
+    pub init: csdk::I2C_InitTypeDef,
     /// Timeout.
     #[cfg(feature = "time")]
     pub timeout: embassy_time::Duration,
@@ -75,11 +61,13 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            clock_speed: 100000,
-            duty_cycle: csdk::I2C_DUTYCYCLE_16_9,
-            own_address1: 0xA0,
-            general_call_mode: csdk::I2C_GENERALCALL_DISABLE,
-            no_stretch_mode: csdk::I2C_NOSTRETCH_DISABLE,
+            init: csdk::I2C_InitTypeDef {
+                ClockSpeed: 100000,
+                DutyCycle: csdk::I2C_DUTYCYCLE_16_9,
+                OwnAddress1: 0xA0,
+                GeneralCallMode: csdk::I2C_GENERALCALL_DISABLE,
+                NoStretchMode: csdk::I2C_NOSTRETCH_DISABLE,
+            },
             #[cfg(feature = "time")]
             timeout: embassy_time::Duration::from_secs(2),
             #[cfg(not(feature = "time"))]
@@ -138,13 +126,7 @@ impl<M: Mode> I2c<M> {
     fn new_from_csdk(instance: *mut csdk::I2C_TypeDef, config: Config) -> Result<Self, Error> {
         let handle = csdk::I2C_HandleTypeDef {
             Instance: instance,
-            Init: csdk::I2C_InitTypeDef {
-                ClockSpeed: config.clock_speed,
-                DutyCycle: config.duty_cycle,
-                OwnAddress1: config.own_address1,
-                GeneralCallMode: config.general_call_mode,
-                NoStretchMode: config.no_stretch_mode,
-            },
+            Init: config.init,
             pBuffPtr: core::ptr::null_mut(),
             XferSize: 0,
             XferCount: 0,

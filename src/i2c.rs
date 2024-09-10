@@ -115,9 +115,9 @@ impl I2c<Blocking> {
     pub fn new_blocking(instance_num: u8, config: Config) -> Result<Self, Error> {
         let instance = match instance_num {
             #[cfg(feature = "peri-i2c1")]
-            1 => csdk::I21,
+            1 => csdk::I2C1,
             #[cfg(feature = "peri-i2c2")]
-            2 => csdk::I22,
+            2 => csdk::I2C2,
             // TODO
             _ => panic("unknown i2c id"),
         };
@@ -200,15 +200,10 @@ impl<M: Mode> I2c<M> {
                 },
                 _ => Err(Error::Csdk),
             }?;
-            // unsafe { defmt::println!("i2c init state  {:?}", self.handle.State) };
-            // unsafe { defmt::println!("i2c init  {:?}", csdk::HAL_I2C_Init(&mut self.handle)) };
-            // unsafe { defmt::println!("i2c init state  {:?}", self.handle.State) };
-            // unsafe { defmt::println!("i2c init or1  {:?}", (*self.handle.Instance).CR1) };
             match csdk::HAL_I2C_Init(&mut self.handle) {
                 csdk::HAL_StatusTypeDef_HAL_OK => Ok(()),
                 _ => Err(Error::Csdk),
             }
-            // Ok(())
         }
     }
 
@@ -222,7 +217,6 @@ impl<M: Mode> I2c<M> {
 
 impl<M: Mode> I2c<M> {
     fn get_error_code(&self, result: u32) -> Result<(), Error> {
-        // defmt::println!("get_error_code:result: {} code: {}", result, self.handle.ErrorCode);
         if result == csdk::HAL_StatusTypeDef_HAL_OK {
             Ok(())
         } else {

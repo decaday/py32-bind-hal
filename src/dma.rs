@@ -1,7 +1,6 @@
 use core::ffi::c_void;
 
 use crate::csdk;
-use crate::csdk_hal::check;
 use crate::csdk::interrupts::interrupt;
 
 const DMA_CHANNEL_COUNT: usize = 16;

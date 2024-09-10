@@ -20,11 +20,23 @@ unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum Error{
+pub enum Error {
     Error,
     Busy,
     Timeout,
+    UserInput(InputError),
 }
+
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum InputError {
+    InvalidInstant,
+}
+
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum InputErrorType {
+    Instant,
+}
+
 
 pub fn init(){
     crate::csdk_hal::init();
@@ -36,6 +48,35 @@ pub fn init(){
 
     #[cfg(feature = "embassy")]
     crate::time_driver::init();
+}
+
+
+pub struct Timeout {
+    #[cfg(feature = "time")]
+    pub timeout: embassy_time::Duration,
+    #[cfg(not(feature = "time"))]
+    pub timeout_tick: u32,
+}
+
+impl Timeout {
+    pub fn new_mill(mill: u32) -> Self {
+        Self {
+            #[cfg(feature = "time")]
+            timeout: embassy_time::Duration::from_millis(mill as u64),
+            #[cfg(not(feature = "time"))]
+            timeout_tick: mill,
+        }
+    }
+
+
+    #[inline]
+    pub fn get_tick(&self) -> u32 {
+        #[cfg(feature = "time")]
+        let timout_tick = self.timeout.as_ticks() as u32;
+        #[cfg(not(feature = "time"))]
+        let timout_tick = self.timeout_tick;
+        timout_tick
+    }
 }
 
 pub mod mode {
@@ -70,6 +111,8 @@ pub mod power;
 
 #[cfg(feature = "peri-i2c")]
 pub mod i2c;
+
+pub mod uart;
 
 pub mod exti;
 

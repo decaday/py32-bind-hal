@@ -12,11 +12,11 @@ use embedded_hal::{self as embedded_hal_1, i2c::I2c};
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 
-use bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc, dma};
+use py32_bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc, dma};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    bind_hal::init();
+    py32_bind_hal::init();
     defmt::println!("Hello, world!  1");
     init_pb3();
     defmt::println!("Hello, world!  2");

@@ -27,15 +27,15 @@ Users can also directly use FFI to perform complex operations without manipulati
 | RTC                   | ✔        |                    |              |
 | WDG                   | ✔        |                    |              |
 
-| Peripherals/Functions | Bindings | Easy-to-use func | Embedded-Hal | Embedded-Async | Polling | DMA  | IT   |
-| --------------------- | -------- | ---------------- | ------------ | -------------- | ------- | ---- | ---- |
-| EXTI                  | ✔        | ✔                | ✔            | ✔              | ✖ | ✖   | ✔    |
-| I2C                   | ✔        | ✔                | ✔            |                | ✔       |      |      |
-| ADC                   | ✔        | ✔              | ✖ | ✖ | ✔ | ✔ |      |
-| USART                 | ✔        | WIP              |              |                |         |      |      |
-| SPI                   | ✔        |                  |              |                |         |      |      |
-| LED                   | ✔        |                  |              |                |         |      |      |
-|                       |          |                  |              |                |         |      |      |
+| Peripherals/Functions | Bindings | Easy-to-use func | Embedded-Hal | Embedded-Async | Polling | DMA | IT  |
+| --------------------- | -------- | ---------------- | ------------ | -------------- | ------- | --- | --- |
+| EXTI                  | ✔        | ✔                | ✔            | ✔              | ✖       | ✖   | ✔   |
+| I2C                   | ✔        | ✔                | ✔            |                | ✔       |     |     |
+| ADC                   | ✔        | ✔                | ✖            | ✖              | ✔       | ✔   |     |
+| USART                 | ✔        | WIP              |              |                |         |     |     |
+| SPI                   | ✔        |                  |              |                |         |     |     |
+| LED                   | ✔        |                  |              |                |         |     |     |
+|                       |          |                  |              |                |         |     |     |
 
 ✖: mcu or embedded-hal not support
 
@@ -45,8 +45,6 @@ Others:
 
 | Interrupt(cortex-m-rt) | Embassy Time-Driver | HAL-Ticks |
 | ---------------------- | ------------------- | --------- |
-
-
 
 ## Why use bindings?
 
@@ -62,4 +60,6 @@ This crate requires little maintenance and does not require dealing with registe
 
 The CSDK and bindings for py32 are maintained here: [py32csdk-hal-sys](https://github.com/decaday/py32csdk-hal-sys), and this package already includes precompiled static library file and `bindings.rs` for quick use. However, if you want to recompile and generate bindings, it will be troublesome, please check its Docs. You need to enable the `recompile` feature.
 
-## 
+## Old Verisons
+
+You can see old versions at [bind-hal  -  crates.io](https://crates.io/crates/bind-hal) and [decaday/bind-hal (github.com)](https://github.com/decaday/bind-hal) .

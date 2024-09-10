@@ -87,6 +87,7 @@ pub struct I2c<M: Mode> {
     timeout_tick: u32,
     _phantom: PhantomData<M>,
 }
+
 impl I2c<Blocking> {
     /// Create a new blocking I2C driver.
     pub fn new_blocking_from_csdk(instance: *mut csdk::I2C_TypeDef, config: Config) -> Result<Self, Error> {
@@ -188,13 +189,6 @@ impl<M: Mode> I2c<M> {
             }
         }
     }
-
-    fn timeout(&self) -> Timeout {
-        Timeout {
-            #[cfg(feature = "time")]
-            deadline: Instant::now() + self.timeout,
-        }
-    }
 }
 
 impl<M: Mode> I2c<M> {
@@ -278,46 +272,6 @@ impl<M: Mode> I2c<M> {
             }
         }
         Ok(())
-    }
-}
-
-#[derive(Copy, Clone)]
-struct Timeout {
-    #[cfg(feature = "time")]
-    deadline: Instant,
-}
-
-#[allow(dead_code)]
-impl Timeout {
-    #[inline]
-    fn check(self) -> Result<(), Error> {
-        #[cfg(feature = "time")]
-        if Instant::now() > self.deadline {
-            return Err(Error::Timeout);
-        }
-
-        Ok(())
-    }
-
-    #[inline]
-    fn with<R>(
-        self,
-        fut: impl Future<Output = Result<R, Error>>,
-    ) -> impl Future<Output = Result<R, Error>> {
-        #[cfg(feature = "time")]
-        {
-            use futures_util::FutureExt;
-
-            embassy_futures::select::select(embassy_time::Timer::at(self.deadline), fut).map(|r| {
-                match r {
-                    embassy_futures::select::Either::First(_) => Err(Error::Timeout),
-                    embassy_futures::select::Either::Second(r) => r,
-                }
-            })
-        }
-
-        #[cfg(not(feature = "time"))]
-        fut
     }
 }
 

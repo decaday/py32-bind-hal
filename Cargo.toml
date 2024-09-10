@@ -1,14 +1,14 @@
 [package]
 authors = ["decaday <myDecaday@outlook.com>"]
-name = "bind-hal"
+name = "py32-bind-hal"
 edition = "2021"
-version = "0.3.2"
+version = "0.4.0"
 build = "build.rs"
 license-file = "LICENSE"
 description = "MCU HALs using binding, currently supports PY32"
 readme = "README.md"
-homepage = "https://github.com/decaday/bind-hal"
-repository = "https://github.com/decaday/bind-hal"
+homepage = "https://github.com/decaday/py32-bind-hal"
+repository = "https://github.com/decaday/py32-bind-hal"
 keywords = ["embedded-hal", "no-std", "py32", "mcu"]
 categories = ["no-std"]
 exclude = ["src/main.rs"]

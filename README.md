@@ -1,6 +1,6 @@
-# bind-hal
+# py32-bind-hal
 
-[![Crates.io](https://img.shields.io/crates/v/bind-hal.svg)](https://crates.io/crates/bind-hal)
+[![Crates.io](https://img.shields.io/crates/v/py32-bind-hal.svg)](https://crates.io/crates/py32-bind-hal)
 
 This project aims to provide a more complete HAL (Hardware Abstraction Layer).
 
@@ -31,7 +31,7 @@ Users can also directly use FFI to perform complex operations without manipulati
 | --------------------- | -------- | ---------------- | ------------ | -------------- | ------- | ---- | ---- |
 | EXTI                  | ✔        | ✔                | ✔            | ✔              | ✖ | ✖   | ✔    |
 | I2C                   | ✔        | ✔                | ✔            |                | ✔       |      |      |
-| ADC                   | ✔        | ✔(only polling)              | ✖ | ✖ | ✔ | ✔ |      |
+| ADC                   | ✔        | ✔              | ✖ | ✖ | ✔ | ✔ |      |
 | USART                 | ✔        | WIP              |              |                |         |      |      |
 | SPI                   | ✔        |                  |              |                |         |      |      |
 | LED                   | ✔        |                  |              |                |         |      |      |
@@ -57,10 +57,6 @@ This crate’s performance, ROM, and RAM usage are far inferior to these HALs.
 However, most Rust HALs are maintained by the community or enthusiasts and do not receive vendor support. Especially for microcontrollers with fewer users, there are not enough people to maintain the HAL, or in the end, only basic functions can be used.
 
 This crate requires little maintenance and does not require dealing with registers. Even if there are unwrapped functions, others can easily supplement or directly call FFI.
-
-
-
-In the near future, this crate will primarily update SDKs for microcontrollers similar to `STM32 HAL CSDK`  aiming to reuse code on similar SDKs.
 
 ## py32csdk-hal-sys
 

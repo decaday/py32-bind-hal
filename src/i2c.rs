@@ -5,8 +5,10 @@
 // 94007ce6e0fc59e374902eadcc31616e56068e43
 
 
+use csdk_hal::check;
+use defmt::bitflags;
 use embedded_hal as embedded_hal_1;
-use crate::csdk;
+use crate::*;
 use crate::mode::{Async, Blocking, Mode};
 
 use core::future::Future;
@@ -19,7 +21,7 @@ use embassy_time::{Duration, Instant};
 /// I2C error.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum Error {
+pub enum I2cError {
     /// Bus error
     Bus,
     /// Arbitration lost
@@ -45,6 +47,23 @@ pub enum Error {
     /// Other error
     Other,
 }
+
+bitflags! {
+    struct I2cErrorFlags: u32 {
+        const NONE      = csdk::HAL_I2C_ERROR_NONE;
+        const BUS       = csdk::HAL_I2C_ERROR_BERR;
+        const ARBITRATION = csdk::HAL_I2C_ERROR_ARLO;
+        const NACK      = csdk::HAL_I2C_ERROR_AF;
+        const OVERRUN   = csdk::HAL_I2C_ERROR_OVR;
+        const TIMEOUT   = csdk::HAL_I2C_ERROR_TIMEOUT;
+        const SIZE      = csdk::HAL_I2C_ERROR_SIZE;
+        #[cfg(feature = "peri-dma")]
+        const DMA       = csdk::HAL_I2C_ERROR_DMA;
+        #[cfg(feature = "peri-dma")]
+        const DMA_PARAM = csdk::HAL_I2C_ERROR_DMA_PARAM;
+    }
+}
+
 
 /// I2C config
 #[non_exhaustive]
@@ -90,18 +109,18 @@ pub struct I2c<M: Mode> {
 
 impl I2c<Blocking> {
     /// Create a new blocking I2C driver.
-    pub fn new_blocking_from_csdk(instance: *mut csdk::I2C_TypeDef, config: Config) -> Result<Self, Error> {
+    pub fn new_blocking_from_csdk(instance: *mut csdk::I2C_TypeDef, config: Config) -> Result<Self, Error<I2cErrorFlags>> {
         Self::new_from_csdk(instance, config)
     }
 
     #[cfg(feature = "peri-i2c0")]
-    pub fn new_blocking(config: Config) -> Result<Self, Error> {
+    pub fn new_blocking(config: Config) -> Result<Self, Error<I2cErrorFlags>> {
         let instance = csdk::I2C;
         Self::new_from_csdk(instance, config)
     }
 
     #[cfg(not(feature = "peri-i2c0"))]
-    pub fn new_blocking(instance_num: u8, config: Config) -> Result<Self, Error> {
+    pub fn new_blocking(instance_num: u8, config: Config) -> Result<Self, Error<I2cErrorFlags>> {
         let instance = match instance_num {
             #[cfg(feature = "peri-i2c1")]
             1 => csdk::I2C1,
@@ -124,7 +143,7 @@ impl I2c<Blocking> {
 
 impl<M: Mode> I2c<M> {
     /// Create a new I2C driver.
-    fn new_from_csdk(instance: *mut csdk::I2C_TypeDef, config: Config) -> Result<Self, Error> {
+    fn new_from_csdk(instance: *mut csdk::I2C_TypeDef, config: Config) -> Result<Self, Error<I2cErrorFlags>> {
         let handle = csdk::I2C_HandleTypeDef {
             Instance: instance,
             Init: config.init,
@@ -157,7 +176,7 @@ impl<M: Mode> I2c<M> {
         Ok(this)
     }
 
-    fn enable_and_init(&mut self) -> Result<(), Error> {
+    fn enable_and_init(&mut self) -> Result<(), Error<I2cErrorFlags>> {
         unsafe{
             match self.handle.Instance {
                 #[cfg(feature = "peri-i2c0")]
@@ -181,38 +200,36 @@ impl<M: Mode> I2c<M> {
                     csdk::HAL_RCC_I2C2_RELEASE_RESET();
                     Ok(())
                 },
-                _ => Err(Error::Csdk),
+                _ => Err(Error::UserInput(InputError::InvalidInstant)),
             }?;
-            match csdk::HAL_I2C_Init(&mut self.handle) {
-                csdk::HAL_StatusTypeDef_HAL_OK => Ok(()),
-                _ => Err(Error::Csdk),
-            }
+            check(csdk::HAL_I2C_Init(&mut self.handle), ||self.gerr())
         }
     }
 }
 
+// fn gerr(errorcode: u32) -> Error<I2cError> {
+//     // TODO: multi error code
+//     let err = match errorcode {
+//         csdk::HAL_I2C_ERROR_NONE => I2cError::Csdk,
+//         csdk::HAL_I2C_ERROR_BERR => I2cError::Bus,
+//         csdk::HAL_I2C_ERROR_ARLO => I2cError::Arbitration,
+//         csdk::HAL_I2C_ERROR_AF => I2cError::Nack,
+//         csdk::HAL_I2C_ERROR_OVR => I2cError::Overrun,
+//         #[cfg(feature = "peri-dma")]
+//         csdk::HAL_I2C_ERROR_DMA => I2cError::Dma,
+//         #[cfg(feature = "peri-dma")]
+//         csdk::HAL_I2C_ERROR_DMA_PARAM => I2cError::DmaParam,
+//         csdk::HAL_I2C_ERROR_TIMEOUT => I2cError::Timeout,
+//         csdk::HAL_I2C_ERROR_SIZE => I2cError::Size,
+//         _ => I2cError::Other,
+//     };
+//     Error::Error(err)
+// }
+
+
 impl<M: Mode> I2c<M> {
-    fn get_error_code(&self, result: u32) -> Result<(), Error> {
-        if result == csdk::HAL_StatusTypeDef_HAL_OK {
-            Ok(())
-        } else {
-            // TODO: multi error code
-            let err = match self.handle.ErrorCode {
-                csdk::HAL_I2C_ERROR_NONE => Error::Csdk,
-                csdk::HAL_I2C_ERROR_BERR => Error::Bus,
-                csdk::HAL_I2C_ERROR_ARLO => Error::Arbitration,
-                csdk::HAL_I2C_ERROR_AF => Error::Nack,
-                csdk::HAL_I2C_ERROR_OVR => Error::Overrun,
-                #[cfg(feature = "peri-dma")]
-                csdk::HAL_I2C_ERROR_DMA => Error::Dma,
-                #[cfg(feature = "peri-dma")]
-                csdk::HAL_I2C_ERROR_DMA_PARAM => Error::DmaParam,
-                csdk::HAL_I2C_ERROR_TIMEOUT => Error::Timeout,
-                csdk::HAL_I2C_ERROR_SIZE => Error::Size,
-                _ => Error::Other,
-            };
-            Err(err)
-        }
+    fn gerr(&self) -> Error<I2cErrorFlags> {
+        Error::HalError(I2cErrorFlags::from_bits_truncate(self.handle.ErrorCode))
     }
 
     fn get_timeout_tick(&self) -> u32 {
@@ -223,7 +240,7 @@ impl<M: Mode> I2c<M> {
         timout_tick
     }
 
-    fn blocking_read(&mut self, address: u8, read: &mut [u8]) -> Result<(), Error> {
+    fn blocking_read(&mut self, address: u8, read: &mut [u8]) -> Result<(), Error<I2cErrorFlags>> {
         let result = unsafe {
             csdk::HAL_I2C_Master_Receive(
                 &mut self.handle,
@@ -233,10 +250,10 @@ impl<M: Mode> I2c<M> {
                 self.get_timeout_tick(),
             )
         };
-        self.get_error_code(result)
+        check(result, ||self.gerr())
     }
 
-    fn blocking_write(&mut self, address: u8, write: &[u8]) -> Result<(), Error> {
+    fn blocking_write(&mut self, address: u8, write: &[u8]) -> Result<(), Error<I2cErrorFlags>> {
         let result = unsafe {
             csdk::HAL_I2C_Master_Transmit(
                 &mut self.handle,
@@ -246,7 +263,7 @@ impl<M: Mode> I2c<M> {
                 self.get_timeout_tick(),
             )
         };
-        self.get_error_code(result)
+        check(result, ||self.gerr())
     }
 
     fn blocking_write_read(
@@ -254,7 +271,7 @@ impl<M: Mode> I2c<M> {
         address: u8,
         write: &[u8],
         read: &mut [u8],
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<I2cErrorFlags>> {
         self.blocking_read(address, read)?;
         self.blocking_write(address, write)?;
         Ok(())
@@ -264,7 +281,7 @@ impl<M: Mode> I2c<M> {
         &mut self,
         address: u8,
         operations: &mut [embedded_hal_1::i2c::Operation<'_>],
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<I2cErrorFlags>> {
         for op in operations {
             match op {
                 embedded_hal_1::i2c::Operation::Read(read) => self.blocking_read(address, read)?,
@@ -275,38 +292,31 @@ impl<M: Mode> I2c<M> {
     }
 }
 
-impl embedded_hal_1::i2c::Error for Error {
+impl embedded_hal_1::i2c::Error for Error<I2cErrorFlags> {
     fn kind(&self) -> embedded_hal_1::i2c::ErrorKind {
-        match *self {
-            Self::Bus => embedded_hal_1::i2c::ErrorKind::Bus,
-            Self::Arbitration => embedded_hal_1::i2c::ErrorKind::ArbitrationLoss,
-            Self::Nack => embedded_hal_1::i2c::ErrorKind::NoAcknowledge(
-                embedded_hal_1::i2c::NoAcknowledgeSource::Unknown,
-            ),
-            Self::Timeout => embedded_hal_1::i2c::ErrorKind::Other,
-            Self::Crc => embedded_hal_1::i2c::ErrorKind::Other,
-            Self::Overrun => embedded_hal_1::i2c::ErrorKind::Overrun,
-            #[cfg(feature = "peri-dma")]
-            Self::Dma => embedded_hal_1::i2c::ErrorKind::Other,
-            #[cfg(feature = "peri-dma")]
-            Self::DmaParam => embedded_hal_1::i2c::ErrorKind::Other,
-            Self::Size => embedded_hal_1::i2c::ErrorKind::Other,
-            Self::Csdk => embedded_hal_1::i2c::ErrorKind::Other,
-            Self::Other => embedded_hal_1::i2c::ErrorKind::Other,
+        match self {
+            Error::HalError(error_flags) => match *error_flags {
+                I2cErrorFlags::BUS => embedded_hal_1::i2c::ErrorKind::Bus,
+                I2cErrorFlags::ARBITRATION => embedded_hal_1::i2c::ErrorKind::ArbitrationLoss,
+                I2cErrorFlags::NACK => embedded_hal_1::i2c::ErrorKind::NoAcknowledge(embedded_hal_1::i2c::NoAcknowledgeSource::Unknown),
+                I2cErrorFlags::OVERRUN => embedded_hal_1::i2c::ErrorKind::Overrun,
+                _ => embedded_hal_1::i2c::ErrorKind::Other,
+            },
+            _ => embedded_hal_1::i2c::ErrorKind::Other,
         }
     }
 }
 
 impl<M: Mode> embedded_hal_1::i2c::ErrorType for I2c<M> {
-    type Error = Error;
+    type Error = Error<I2cErrorFlags>;
 }
 
 impl<M: Mode> embedded_hal_1::i2c::I2c for I2c<M> {
-    fn read(&mut self, address: u8, read: &mut [u8]) -> Result<(), Self::Error> {
+    fn read(&mut self, address: u8, read: &mut [u8]) -> Result<(), Error<I2cErrorFlags>> {
         self.blocking_read(address, read)
     }
 
-    fn write(&mut self, address: u8, write: &[u8]) -> Result<(), Self::Error> {
+    fn write(&mut self, address: u8, write: &[u8]) -> Result<(), Error<I2cErrorFlags>> {
         self.blocking_write(address, write)
     }
 
@@ -315,7 +325,7 @@ impl<M: Mode> embedded_hal_1::i2c::I2c for I2c<M> {
         address: u8,
         write: &[u8],
         read: &mut [u8],
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), Error<I2cErrorFlags>> {
         self.blocking_write_read(address, write, read)
     }
 
@@ -323,7 +333,7 @@ impl<M: Mode> embedded_hal_1::i2c::I2c for I2c<M> {
         &mut self,
         address: u8,
         operations: &mut [embedded_hal_1::i2c::Operation<'_>],
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), Error<I2cErrorFlags>> {
         self.blocking_transaction(address, operations)
     }
 }

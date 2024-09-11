@@ -20,8 +20,8 @@ unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum Error {
-    Error,
+pub enum Error<E> {
+    HalError(E),
     Busy,
     Timeout,
     UserInput(InputError),

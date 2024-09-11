@@ -17,21 +17,15 @@ fn SysTick(){
     crate::time_driver::on_interrupt();
 }
 
-impl From<csdk::HAL_StatusTypeDef> for crate::Error {
-    fn from(status: csdk::HAL_StatusTypeDef) -> Self {
-        match status {
-            csdk::HAL_StatusTypeDef_HAL_ERROR => crate::Error::Error,
-            csdk::HAL_StatusTypeDef_HAL_BUSY => crate::Error::Busy,
-            csdk::HAL_StatusTypeDef_HAL_TIMEOUT => crate::Error::Timeout,
-            csdk::HAL_StatusTypeDef_HAL_OK => panic!(),
-            _ => panic!(),
-        }
-    }
-}
-
-pub fn check(operation: csdk::HAL_StatusTypeDef) -> Result<(), crate::Error> {
-    match operation {
+pub fn check<F, T>(status: csdk::HAL_StatusTypeDef, gerr: F) -> Result<(), crate::Error<T>> 
+where
+    F: FnOnce() -> crate::Error<T>,
+{
+    match status {
         csdk::HAL_StatusTypeDef_HAL_OK => Ok(()),
-        err => Err(err.into()),
+        csdk::HAL_StatusTypeDef_HAL_ERROR => Err(gerr()),
+        csdk::HAL_StatusTypeDef_HAL_BUSY => Err(crate::Error::Busy),
+        csdk::HAL_StatusTypeDef_HAL_TIMEOUT => Err(crate::Error::Timeout),
+        _ => panic!(),
     }
 }

@@ -81,6 +81,27 @@ bitflags! {
     }
 }
 
+impl Uart<Blocking> {
+    /// Create a new blocking I2C driver.
+    pub fn new_blocking_from_csdk(instance: *mut csdk::USART_TypeDef, config: Config) -> Result<Self, Error<UartErrorFlags>> {
+        Self::new_from_csdk(instance, config)
+    }
+
+    pub fn new_blocking(instance_num: u8, config: Config) -> Result<Self, Error<UartErrorFlags>> {
+        let instance = match instance_num {
+            // #[cfg(feature = "peri-usart1")]
+            1 => csdk::USART1,
+            // #[cfg(feature = "peri-usart2")]
+            2 => csdk::USART2,
+            // TODO
+            _ => Err(Error::UserInput(InputError::InvalidInstance))?,
+        };
+        Self::new_from_csdk(instance, config)
+    }
+}
+
+
+
 impl<M: Mode> Uart<M> {
     pub fn new_from_csdk(instance: *mut csdk::USART_TypeDef,config: Config) -> Result<Self, Error<UartErrorFlags>> {
         let mut this = Self {
@@ -121,7 +142,7 @@ impl<M: Mode> Uart<M> {
                     csdk::HAL_RCC_USART2_CLK_ENABLE();
                     Ok(())
                 },
-                _ => Err(Error::UserInput(InputError::InvalidInstant)),
+                _ => Err(Error::UserInput(InputError::InvalidInstance)),
             }?;
             check(csdk::HAL_UART_Init(&mut self.handle),  ||self.gerr())
         }

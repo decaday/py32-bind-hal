@@ -2,7 +2,7 @@
 authors = ["decaday <myDecaday@outlook.com>"]
 name = "py32-bind-hal"
 edition = "2021"
-version = "0.4.0"
+version = "0.4.1"
 build = "build.rs"
 license-file = "LICENSE"
 description = "MCU HALs using binding, currently supports PY32"

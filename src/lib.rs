@@ -29,7 +29,7 @@ pub enum Error<E> {
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum InputError {
-    InvalidInstant,
+    InvalidInstance,
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

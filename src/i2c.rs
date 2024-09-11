@@ -130,7 +130,7 @@ impl I2c<Blocking> {
             #[cfg(feature = "peri-i2c2")]
             2 => csdk::I2C2,
             // TODO
-            _ => panic("unknown i2c id"),
+            _ => return Err(Error::UserInput(InputError::InvalidInstance)),
         };
         let instance = csdk::I2C;
         Self::new_from_csdk(instance, config)
@@ -203,7 +203,7 @@ impl<M: Mode> I2c<M> {
                     csdk::HAL_RCC_I2C2_RELEASE_RESET();
                     Ok(())
                 },
-                _ => Err(Error::UserInput(InputError::InvalidInstant)),
+                _ => Err(Error::UserInput(InputError::InvalidInstance)),
             }?;
             check(csdk::HAL_I2C_Init(&mut self.handle), ||self.gerr())
         }

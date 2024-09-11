@@ -119,7 +119,7 @@ impl Adc {
                     csdk::HAL_RCC_ADC_RELEASE_RESET();
                     csdk::HAL_RCC_ADC_CLK_ENABLE();
                     },
-                _ => todo!(),
+                _ => panic!(),
             }
         }
     }

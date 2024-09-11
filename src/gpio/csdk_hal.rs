@@ -69,7 +69,7 @@ impl AnyPin{
             'B' | 'b' => Ok(csdk::GPIOB),
             #[cfg(feature = "peri-gpiof")]
             'F' | 'f' => Ok(csdk::GPIOF),
-            _ => Err(Error::UserInput(InputError::InvalidInstant)),
+            _ => Err(Error::UserInput(InputError::InvalidInstance)),
         }?;
 
         let c_init_type = csdk::GPIO_InitTypeDef {
@@ -93,7 +93,7 @@ impl AnyPin{
                 csdk::GPIOB => csdk::HAL_RCC_GPIOB_CLK_ENABLE(),
                 #[cfg(feature = "peri-gpiof")]
                 csdk::GPIOF => csdk::HAL_RCC_GPIOF_CLK_ENABLE(),
-                _ => return Err(Error::UserInput(InputError::InvalidInstant)),
+                _ => return Err(Error::UserInput(InputError::InvalidInstance)),
             };
             Ok(())
         }

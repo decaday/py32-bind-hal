@@ -12,7 +12,7 @@ use embedded_hal::{self as embedded_hal_1, i2c::I2c};
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 
-use py32_bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc, dma};
+use py32_bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc, dma, uart};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
@@ -24,7 +24,8 @@ async fn main(_spawner: Spawner) -> ! {
     adc_blocking_test();
     adc_dma_test();
 
-    i2c_test();
+    // i2c_test();
+    uart_test();
     exti_test().await;
     
     // unsafe{
@@ -117,4 +118,17 @@ fn adc_dma_test() {
     defmt::println!("adc dma value  {}", data);
     unsafe { csdk::HAL_Delay(100); }
     defmt::println!("adc dma value  {}", data);
+}
+
+
+fn uart_test() {
+    let mut scl = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_3).unwrap();
+    scl.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);
+    let mut sda = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_2).unwrap();
+    sda.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);
+
+    let mut uart_config = uart::Config::default();
+    let mut uart = uart::Uart::new_blocking(1, uart_config).unwrap();
+    let data: [u8; 5] = ['a' as u8 ; 5];
+    uart.blocking_write(&data).unwrap();
 }

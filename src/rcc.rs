@@ -3,11 +3,13 @@
 // use core::convert::Infallible;
 // use embedded_hal as embedded_hal_1;
 
-use crate::csdk;
+use crate::*;
+use csdk_hal::check;
 
 pub struct RccConfig{
     pub osc_init: csdk::RCC_OscInitTypeDef,
     pub clk_init: csdk::RCC_ClkInitTypeDef,
+    pub flash_latency: u32,
 }
 
 impl Default for RccConfig {
@@ -39,17 +41,19 @@ impl Default for RccConfig {
                 AHBCLKDivider: csdk::RCC_SYSCLK_DIV1,
                 APB1CLKDivider: csdk::RCC_HCLK_DIV1,
             },
+            flash_latency: csdk::FLASH_LATENCY_1,
         }
     }
 }
 
 impl RccConfig {
     pub fn new_from_csdk(osc_init: csdk::RCC_OscInitTypeDef,
-        clk_init: csdk::RCC_ClkInitTypeDef
+        clk_init: csdk::RCC_ClkInitTypeDef, flash_latency: u32
     ) -> Self {
         Self {
             osc_init,
-            clk_init
+            clk_init,
+            flash_latency,
         }
     }
 
@@ -57,22 +61,19 @@ impl RccConfig {
         Default::default()
     }
 
-    pub fn apply(& mut self) -> Result<(), crate::Error> {
+    pub fn apply(& mut self) -> Result<(), Error<()>> {
         unsafe{
-            match csdk::HAL_RCC_OscConfig(&mut self.osc_init) {
-                csdk::HAL_StatusTypeDef_HAL_OK => Ok::<(), crate::Error>(()),
-                err => Err(err.into())
-            }?;
-            match csdk::HAL_RCC_ClockConfig(&mut self.clk_init, csdk::FLASH_LATENCY_1) {
-                csdk::HAL_StatusTypeDef_HAL_OK => Ok(()),
-                err => Err(err.into())
-            }
+            check(csdk::HAL_RCC_OscConfig(&mut self.osc_init), ||Error::HalError(()))?;
+            check(csdk::HAL_RCC_ClockConfig(&mut self.clk_init, self.flash_latency), ||Error::HalError(()))?;
+            Ok(())
         }
     }
+
+    
 }
 
 #[cfg(feature = "py32f030")]
-pub fn into_48_mhz_hsi() -> Result<(), crate::Error> {
+pub fn into_48_mhz_hsi() -> Result<(), Error<()>> {
     let mut rcc = RccConfig::new();
     rcc.osc_init.HSICalibrationValue = unsafe { csdk::RCC_GET_HSICALIBRATION_24MHz() };
     rcc.osc_init.PLL.PLLState = csdk::RCC_PLL_ON;
@@ -80,7 +81,7 @@ pub fn into_48_mhz_hsi() -> Result<(), crate::Error> {
 }
 
 #[cfg(feature = "py32f030")]
-pub fn into_32_mhz_hsi() -> Result<(), crate::Error> {
+pub fn into_32_mhz_hsi() -> Result<(), Error<()>> {
     let mut rcc = RccConfig::new();
     rcc.osc_init.HSICalibrationValue = unsafe { csdk::RCC_GET_HSICALIBRATION_16MHz() };
     rcc.osc_init.PLL.PLLState = csdk::RCC_PLL_ON;
@@ -88,7 +89,7 @@ pub fn into_32_mhz_hsi() -> Result<(), crate::Error> {
 }
 
 #[cfg(feature = "py32f030")]
-pub fn into_8_mhz_hsi() -> Result<(), crate::Error> {
+pub fn into_8_mhz_hsi() -> Result<(), Error<()>> {
     let mut rcc = RccConfig::new();
     rcc.osc_init.HSICalibrationValue = unsafe { csdk::RCC_GET_HSICALIBRATION_8MHz() };
     rcc.osc_init.PLL.PLLState = csdk::RCC_PLL_OFF;
@@ -96,7 +97,7 @@ pub fn into_8_mhz_hsi() -> Result<(), crate::Error> {
 }
 
 #[cfg(feature = "py32f030")]
-pub fn into_1_mhz_hsi() -> Result<(), crate::Error> {
+pub fn into_1_mhz_hsi() -> Result<(), Error<()>> {
     let mut rcc = RccConfig::new();
     rcc.osc_init.HSICalibrationValue = unsafe { csdk::RCC_GET_HSICALIBRATION_8MHz() };
     rcc.osc_init.PLL.PLLState = csdk::RCC_PLL_OFF;

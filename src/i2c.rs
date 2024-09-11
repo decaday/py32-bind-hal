@@ -4,52 +4,55 @@
 // modified from https://github.com/embassy-rs/embassy/
 // 94007ce6e0fc59e374902eadcc31616e56068e43
 
-
-use csdk_hal::check;
-use defmt::bitflags;
-use embedded_hal as embedded_hal_1;
-use crate::*;
-use crate::mode::{Async, Blocking, Mode};
-
 use core::future::Future;
 use core::marker::PhantomData;
 
+use embedded_hal as embedded_hal_1;
+
 #[cfg(feature = "time")]
-use embassy_time::{Duration, Instant};
+use embassy_time::Duration;
+use defmt::bitflags;
+
+use csdk_hal::check;
+use crate::*;
+use crate::mode::{Async, Blocking, Mode};
+
+
+
 
 
 /// I2C error.
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum I2cError {
-    /// Bus error
-    Bus,
-    /// Arbitration lost
-    Arbitration,
-    /// ACK not received (either to the address or to a data byte)
-    Nack,
-    /// Timeout
-    Timeout,
-    /// CRC error
-    Crc,
-    /// Overrun error
-    Overrun,
-    #[cfg(feature = "peri-dma")]
-    /// DMA transfer error.
-    Dma,
-    #[cfg(feature = "peri-dma")]
-    /// DMA parameter error.
-    DmaParam,
-    /// Size management error.
-    Size,
-    /// CSDK error
-    Csdk,
-    /// Other error
-    Other,
-}
+// #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+// pub enum I2cError {
+//     /// Bus error
+//     Bus,
+//     /// Arbitration lost
+//     Arbitration,
+//     /// ACK not received (either to the address or to a data byte)
+//     Nack,
+//     /// Timeout
+//     Timeout,
+//     /// CRC error
+//     Crc,
+//     /// Overrun error
+//     Overrun,
+//     #[cfg(feature = "peri-dma")]
+//     /// DMA transfer error.
+//     Dma,
+//     #[cfg(feature = "peri-dma")]
+//     /// DMA parameter error.
+//     DmaParam,
+//     /// Size management error.
+//     Size,
+//     /// CSDK error
+//     Csdk,
+//     /// Other error
+//     Other,
+// }
 
 bitflags! {
-    struct I2cErrorFlags: u32 {
+    pub struct I2cErrorFlags: u32 {
         const NONE      = csdk::HAL_I2C_ERROR_NONE;
         const BUS       = csdk::HAL_I2C_ERROR_BERR;
         const ARBITRATION = csdk::HAL_I2C_ERROR_ARLO;
@@ -72,7 +75,7 @@ pub struct Config {
     pub init: csdk::I2C_InitTypeDef,
     /// Timeout.
     #[cfg(feature = "time")]
-    pub timeout: embassy_time::Duration,
+    pub timeout: Duration,
     #[cfg(not(feature = "time"))]
     pub timeout_tick: u32,
 }
@@ -88,7 +91,7 @@ impl Default for Config {
                 NoStretchMode: csdk::I2C_NOSTRETCH_DISABLE,
             },
             #[cfg(feature = "time")]
-            timeout: embassy_time::Duration::from_secs(2),
+            timeout: Duration::from_secs(2),
             #[cfg(not(feature = "time"))]
             timeout_tick: 2000,
         }
@@ -101,7 +104,7 @@ pub struct I2c<M: Mode> {
     pub handle: csdk::I2C_HandleTypeDef,
     /// Timeout.
     #[cfg(feature = "time")]
-    pub timeout: embassy_time::Duration,
+    pub timeout: Duration,
     #[cfg(not(feature = "time"))]
     timeout_tick: u32,
     _phantom: PhantomData<M>,
@@ -312,11 +315,11 @@ impl<M: Mode> embedded_hal_1::i2c::ErrorType for I2c<M> {
 }
 
 impl<M: Mode> embedded_hal_1::i2c::I2c for I2c<M> {
-    fn read(&mut self, address: u8, read: &mut [u8]) -> Result<(), Error<I2cErrorFlags>> {
+    fn read(&mut self, address: u8, read: &mut [u8]) -> Result<(), Self::Error> {
         self.blocking_read(address, read)
     }
 
-    fn write(&mut self, address: u8, write: &[u8]) -> Result<(), Error<I2cErrorFlags>> {
+    fn write(&mut self, address: u8, write: &[u8]) -> Result<(), Self::Error> {
         self.blocking_write(address, write)
     }
 
@@ -325,7 +328,7 @@ impl<M: Mode> embedded_hal_1::i2c::I2c for I2c<M> {
         address: u8,
         write: &[u8],
         read: &mut [u8],
-    ) -> Result<(), Error<I2cErrorFlags>> {
+    ) -> Result<(), Self::Error> {
         self.blocking_write_read(address, write, read)
     }
 
@@ -333,7 +336,7 @@ impl<M: Mode> embedded_hal_1::i2c::I2c for I2c<M> {
         &mut self,
         address: u8,
         operations: &mut [embedded_hal_1::i2c::Operation<'_>],
-    ) -> Result<(), Error<I2cErrorFlags>> {
+    ) -> Result<(), Self::Error> {
         self.blocking_transaction(address, operations)
     }
 }

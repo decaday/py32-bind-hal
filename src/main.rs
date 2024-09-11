@@ -40,11 +40,11 @@ async fn main(_spawner: Spawner) -> ! {
 
 
 fn init_pb3() {
-    let mut pin = gpio::AnyPin::new_from_csdk(csdk::GPIOB, csdk::GPIO_PIN_3);
+    let mut pin = gpio::AnyPin::new_from_csdk(csdk::GPIOB, csdk::GPIO_PIN_3).unwrap();
     pin.set_as_output(gpio::Speed::High);
     pin.set_high();
 
-    let mut pin2 = gpio::AnyPin::new('B', 1);
+    let mut pin2 = gpio::AnyPin::new('B', 1).unwrap();
     pin2.set_as_output(gpio::Speed::High);
     pin2.set_low();
 
@@ -52,9 +52,9 @@ fn init_pb3() {
 }
 
 fn i2c_test() {
-    let mut scl = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_3);
+    let mut scl = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_3).unwrap();
     scl.set_as_af_od(csdk::GPIO_AF12_I2C, gpio::Pull::Up, gpio::Speed::VeryHigh);
-    let mut sda = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_2);
+    let mut sda = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_2).unwrap();
     sda.set_as_af_od(csdk::GPIO_AF12_I2C, gpio::Pull::Up, gpio::Speed::VeryHigh);
 
     let mut config: i2c::Config = Default::default();
@@ -74,7 +74,7 @@ fn i2c_test() {
 
 async fn exti_test() {
     let mut pin = exti::ExtiInput::new(
-        gpio::AnyPin::new('B', 6), 
+        gpio::AnyPin::new('B', 6).unwrap(), 
         gpio::Pull::None, 
         gpio::Speed::High);
     pin.wait_for_any_edge().await;

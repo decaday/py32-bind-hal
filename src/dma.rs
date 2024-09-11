@@ -1,10 +1,24 @@
 use core::ffi::c_void;
 
-use crate::csdk;
+use defmt::bitflags;
+
+use crate::*;
+use csdk_hal::check;
 use crate::csdk::interrupts::interrupt;
 
 const DMA_CHANNEL_COUNT: usize = 16;
 static mut DMA_CHANNELS: [Option<*mut csdk::DMA_HandleTypeDef>; DMA_CHANNEL_COUNT] = [None; DMA_CHANNEL_COUNT];
+
+bitflags! {
+    pub struct DmaErrorFlags: u32 {
+        const TRANSFER = csdk::HAL_DMA_ERROR_TE;
+        const NO_ONGOING_TRANSFER = csdk::HAL_DMA_ERROR_NO_XFER;
+        const TIMEOUT = csdk::HAL_DMA_ERROR_TIMEOUT;
+        const NOT_SUPPORTED = csdk::HAL_DMA_ERROR_NOT_SUPPORTED;
+    }
+}
+
+
 
 pub struct DmaChannel {
     pub handle: csdk::DMA_HandleTypeDef,
@@ -56,7 +70,7 @@ impl DmaChannel {
     /// 10111：Reserved
     /// 11000：TIM16_CH1  11001：TIM16_UP  11010：TIM17_CH1 
     /// 11011：TIM17_UP 
-    pub fn new(config: Config, channel: u8, map_value: u8) -> Result<Self, crate::Error> {
+    pub fn new(config: Config, channel: u8, map_value: u8) -> Result<Self, Error<DmaErrorFlags>> {
         let mut handle = csdk::DMA_HandleTypeDef {
             Instance: csdk::DMA1_Channel1,
             Init: config.init,
@@ -93,25 +107,21 @@ impl DmaChannel {
                 },
                 _ => panic!(),
             };
-            // defmt::println!("cfgr3:{:#b}", (*csdk::SYSCFG).CFGR3);
 
-            
-            handle.State = csdk::HAL_DMA_StateTypeDef_HAL_DMA_STATE_READY;
-            // check(csdk::HAL_DMA_DeInit(&mut handle))?;
-            defmt::println!("dma state 1 {} {} {}", handle.State, 1, handle.ErrorCode);
-            // handle.ErrorCode = 100;
-            
-            let result = csdk::HAL_DMA_Init(&mut handle);
-            // check()?;
-            defmt::println!("dma state 2 {} {} {}", handle.State, result, handle.ErrorCode);
+            let this = Self { handle };
+            check(csdk::HAL_DMA_DeInit(&mut handle), ||this.gerr())?;
+            check(csdk::HAL_DMA_Init(&mut handle), ||this.gerr())?;
+            Ok(this)
         }
-        
-        Ok(Self { handle })
     }
 
     pub fn link(&mut self, handle: &mut impl HasDmaField){
         handle.set_dma_field(self);
         self.handle.Parent = handle.get_handle_ptr();
+    }
+
+    fn gerr(&self) -> Error<DmaErrorFlags> {
+        Error::HalError(DmaErrorFlags::from_bits_truncate(self.handle.ErrorCode))
     }
 
 }

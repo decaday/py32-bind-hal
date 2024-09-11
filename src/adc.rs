@@ -3,9 +3,24 @@
 // modified from https://github.com/embassy-rs/embassy
 // ab4d378dda5a74834dcc1fc0c872824f4a616911
 
-use crate::csdk;
+use defmt::bitflags;
+
+use crate::*;
 use crate::csdk_hal::check;
 use crate::dma;
+
+
+
+bitflags! {
+    pub struct AdcErrorFlags: u32 {
+        const INTERNAL_ERROR = csdk::HAL_ADC_ERROR_INTERNAL;
+        const OVERRUN_ERROR = csdk::HAL_ADC_ERROR_OVR;
+        #[cfg(feature = "peri-dma")]
+        const DMA_ERROR = csdk::HAL_ADC_ERROR_DMA;
+        //#[cfg(feature = "register-callbacks")]
+        //const INVALID_CALLBACK = HAL_ADC_ERROR_INVALID_CALLBACK;
+    }
+}
 
 pub struct Adc {
     pub handle: csdk::ADC_HandleTypeDef,
@@ -58,13 +73,13 @@ impl AdcConfig {
 }
 
 impl Adc {
-    pub fn new(config: AdcConfig, instance_num: u8) -> Result<Self, crate::Error> {
+    pub fn new(config: AdcConfig, instance_num: u8) -> Result<Self, Error<AdcErrorFlags>> {
         let mut adc = Self::new_inner(config, instance_num);
         adc.init_inner()?;
         Ok(adc)
     }
 
-    pub fn new_dma(config: AdcConfig, instance_num: u8, dma: &mut dma::DmaChannel) -> Result<Self, crate::Error> {
+    pub fn new_dma(config: AdcConfig, instance_num: u8, dma: &mut dma::DmaChannel) -> Result<Self, Error<AdcErrorFlags>> {
         let mut adc = Self::new_inner(config, instance_num);
         dma.link(&mut adc);
         adc.init_inner()?;
@@ -86,12 +101,12 @@ impl Adc {
         }
     }
 
-    fn init_inner(&mut self) -> Result<(), crate::Error> {
+    fn init_inner(&mut self) -> Result<(), Error<AdcErrorFlags>> {
         self.open_clock();
 
         unsafe {
-            check(csdk::HAL_ADC_Calibration_Start(&mut self.handle))?;
-            check(csdk::HAL_ADC_Init(&mut self.handle))?;
+            check(csdk::HAL_ADC_Calibration_Start(&mut self.handle), ||self.gerr())?;
+            check(csdk::HAL_ADC_Init(&mut self.handle), ||self.gerr())?;
         }
         Ok(())
     }
@@ -116,7 +131,7 @@ impl Adc {
         }
     }
 
-    pub fn new_regular_channel(&mut self, channel: u32) -> Result<(), crate::Error> {
+    pub fn new_regular_channel(&mut self, channel: u32) -> Result<(), Error<AdcErrorFlags>> {
         let mut channel_config = csdk::ADC_ChannelConfTypeDef {
             Channel: channel,
             Rank: csdk::ADC_RANK_CHANNEL_NUMBER,
@@ -124,25 +139,29 @@ impl Adc {
             SamplingTime: self.handle.Init.SamplingTimeCommon,
         };
         unsafe {
-            check(csdk::HAL_ADC_ConfigChannel(&mut self.handle, &mut channel_config))
+            check(csdk::HAL_ADC_ConfigChannel(&mut self.handle, &mut channel_config), ||self.gerr())
         }
     }
 
-    pub fn start_blocking(&mut self) -> Result<(), crate::Error> {
+    fn gerr(&self) -> Error<AdcErrorFlags> {
+        Error::HalError(AdcErrorFlags::from_bits_truncate(self.handle.ErrorCode))
+    }
+
+    pub fn start_blocking(&mut self) -> Result<(), Error<AdcErrorFlags>> {
         unsafe {
-            check(csdk::HAL_ADC_Start(&mut self.handle))
+            check(csdk::HAL_ADC_Start(&mut self.handle), ||self.gerr())
         }
     }
 
-    pub fn stop_blocking(&mut self) -> Result<(), crate::Error> {
+    pub fn stop_blocking(&mut self) -> Result<(), Error<AdcErrorFlags>> {
         unsafe {
-            check(csdk::HAL_ADC_Start(&mut self.handle))
+            check(csdk::HAL_ADC_Start(&mut self.handle), ||self.gerr())
         }
     }
 
-    pub fn blocking_for_conversion(&mut self) -> Result<(), crate::Error> {
+    pub fn blocking_for_conversion(&mut self) -> Result<(), Error<AdcErrorFlags>> {
         unsafe {
-            check(csdk::HAL_ADC_PollForConversion(&mut self.handle, self.timeout_ticks))
+            check(csdk::HAL_ADC_PollForConversion(&mut self.handle, self.timeout_ticks), ||self.gerr())
         }
     }
 
@@ -152,18 +171,18 @@ impl Adc {
         }
     }
 
-    pub fn start_dma(&mut self, read: &mut [u32]) -> Result<(), crate::Error> {
+    pub fn start_dma(&mut self, read: &mut [u32]) -> Result<(), Error<AdcErrorFlags>> {
         unsafe {
             check(csdk::HAL_ADC_Start_DMA(
                 &mut self.handle,
                 read.as_mut_ptr(),
-                read.len() as u32))
+                read.len() as u32), ||self.gerr())
         }
     }
 
-    pub fn stop_dma(&mut self) -> Result<(), crate::Error> {
+    pub fn stop_dma(&mut self) -> Result<(), Error<AdcErrorFlags>> {
         unsafe {
-            check(csdk::HAL_ADC_Stop_DMA(&mut self.handle))
+            check(csdk::HAL_ADC_Stop_DMA(&mut self.handle), ||self.gerr())
         }
     }
 }

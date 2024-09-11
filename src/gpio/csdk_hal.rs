@@ -3,6 +3,7 @@
 #![macro_use]
 use core::convert::Infallible;
 use embedded_hal as embedded_hal_1;
+use crate::*;
 
 use crate::gpio::{Pull, Speed, Level};
 
@@ -41,7 +42,7 @@ pub struct AnyPin {
 
 impl AnyPin{
     /// Form csdk macros like GPIOB GPIO_PIN_4
-    pub fn new_from_csdk(port: *mut csdk::GPIO_TypeDef, pin: u16) -> Self {
+    pub fn new_from_csdk(port: *mut csdk::GPIO_TypeDef, pin: u16) -> Result<Self, Error<()>> {
         let c_init_type = csdk::GPIO_InitTypeDef {
             Pin: pin as u32,
             Mode: csdk::GPIO_MODE_OUTPUT_PP,
@@ -50,26 +51,26 @@ impl AnyPin{
             Alternate: 0,
         };
 
-        Self::open_clk_from_c_macro(port);
-        Self{ port, pin, c_init_type }
+        Self::open_clk_from_c_macro(port)?;
+        Ok(Self {port, pin, c_init_type })
     }
 
-    /// e.g. ‘B’, '4', no 'GPIO_PIN_4'!
-    pub fn new(port_char: char, pin_num: u8) -> Self {
+    /// e.g. ‘B’, '4', no 'GPIO_PIN_4'! If you want to use 'GPIO_PIN_4', use new_from_csdk
+    pub fn new(port_char: char, pin_num: u8) -> Result<Self, Error<()>> {
         assert!(pin_num < 16, "Pin num out of range(0-15)!");
 
         // calculate the GPIO_PIN_x
         let pin = 2_i32.pow(pin_num as u32) as u16;
 
-        let port = match port_char{
+        let port = match port_char {
             #[cfg(feature = "peri-gpioa")]
-            'A' | 'a' => csdk::GPIOA,
+            'A' | 'a' => Ok(csdk::GPIOA),
             #[cfg(feature = "peri-gpiob")]
-            'B' | 'b' => csdk::GPIOB,
+            'B' | 'b' => Ok(csdk::GPIOB),
             #[cfg(feature = "peri-gpiof")]
-            'F' | 'f' => csdk::GPIOF,
-            _ => panic!("Unknown port char {port_char}, e.g.'B' "),
-        };
+            'F' | 'f' => Ok(csdk::GPIOF),
+            _ => Err(Error::UserInput(InputError::InvalidInstant)),
+        }?;
 
         let c_init_type = csdk::GPIO_InitTypeDef {
             Pin: pin as u32,
@@ -79,25 +80,26 @@ impl AnyPin{
             Alternate: 0,
         };
 
-        Self::open_clk_from_c_macro(port);
-        Self{ port, pin, c_init_type }
+        Self::open_clk_from_c_macro(port)?;
+        Ok(Self{ port, pin, c_init_type })
     }
 
-    fn open_clk_from_c_macro(port: *mut csdk::GPIO_TypeDef){
+    fn open_clk_from_c_macro(port: *mut csdk::GPIO_TypeDef) -> Result<(), Error<()>>{
         unsafe {
-            match port{
+            match port {
                 #[cfg(feature = "peri-gpioa")]
                 csdk::GPIOA => csdk::HAL_RCC_GPIOA_CLK_ENABLE(),
                 #[cfg(feature = "peri-gpiob")]
                 csdk::GPIOB => csdk::HAL_RCC_GPIOB_CLK_ENABLE(),
                 #[cfg(feature = "peri-gpiof")]
                 csdk::GPIOF => csdk::HAL_RCC_GPIOF_CLK_ENABLE(),
-                _ => (),
+                _ => return Err(Error::UserInput(InputError::InvalidInstant)),
             };
+            Ok(())
         }
     }
 
-    pub fn open_clk(&mut self){
+    pub fn open_clk(&mut self) -> Result<(), Error<()>> {
         Self::open_clk_from_c_macro(self.port)
     }
 

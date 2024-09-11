@@ -1,13 +1,18 @@
 //! Universal Asynchronous Receiver Transmitter (UART)
 
 
-use csdk_hal::check;
-use embedded_hal as embedded_hal_1;
-use crate::*;
-use crate::mode::{Async, Blocking, Mode};
-
 use core::future::Future;
 use core::marker::PhantomData;
+
+use embedded_hal as embedded_hal_1;
+
+#[cfg(feature = "time")]
+use embassy_time::Duration;
+use defmt::bitflags;
+
+use csdk_hal::check;
+use crate::*;
+use crate::mode::{Async, Blocking, Mode};
 
 pub struct Config {
     pub init: csdk::UART_InitTypeDef,
@@ -63,8 +68,21 @@ pub enum SerialError {
 }
 
 
+bitflags! {
+    pub struct UartErrorFlags: u32 {
+        const PARITY_ERROR = csdk::HAL_UART_ERROR_PE;
+        const NOISE_ERROR = csdk::HAL_UART_ERROR_NE;
+        const FRAME_ERROR = csdk::HAL_UART_ERROR_FE;
+        const OVERRUN_ERROR = csdk::HAL_UART_ERROR_ORE;
+        #[cfg(feature = "peri-dma")]
+        const DMA_ERROR = csdk::HAL_UART_ERROR_DMA;
+        //#[cfg(feature = "register-callbacks")]
+        //const INVALID_CALLBACK = HAL_UART_ERROR_INVALID_CALLBACK;
+    }
+}
+
 impl<M: Mode> Uart<M> {
-    pub fn new_from_csdk(instance: *mut csdk::USART_TypeDef,config: Config) -> Result<Self, Error> {
+    pub fn new_from_csdk(instance: *mut csdk::USART_TypeDef,config: Config) -> Result<Self, Error<UartErrorFlags>> {
         let mut this = Self {
             handle: csdk::UART_HandleTypeDef {
                 Instance: instance,
@@ -92,7 +110,7 @@ impl<M: Mode> Uart<M> {
         Ok(this)
     }
 
-    fn enable_and_init(&mut self) -> Result<(), Error> {
+    fn enable_and_init(&mut self) -> Result<(), Error<UartErrorFlags>> {
         unsafe{
             match self.handle.Instance {
                 csdk::USART1 => {
@@ -105,25 +123,29 @@ impl<M: Mode> Uart<M> {
                 },
                 _ => Err(Error::UserInput(InputError::InvalidInstant)),
             }?;
-            check(csdk::HAL_UART_Init(&mut self.handle))
+            check(csdk::HAL_UART_Init(&mut self.handle),  ||self.gerr())
         }
     }
 
-    pub fn blocking_write(&mut self, buffer: &[u8]) -> Result<(), Error> {
+    fn gerr(&self) -> Error<UartErrorFlags> {
+        Error::HalError(UartErrorFlags::from_bits_truncate(self.handle.ErrorCode))
+    }
+
+    pub fn blocking_write(&mut self, buffer: &[u8]) -> Result<(), Error<UartErrorFlags>> {
         unsafe {
             check(csdk::HAL_UART_Transmit(&mut self.handle, 
                 buffer.as_ptr() as *mut u8, 
                 buffer.len() as u16, 
-                self.timeout.get_tick()))
+                self.timeout.get_tick()), ||self.gerr())
         }   
     }
 
-    pub fn blocking_read(&mut self, buffer: &mut [u8]) -> Result<(), Error> {
+    pub fn blocking_read(&mut self, buffer: &mut [u8]) -> Result<(), Error<UartErrorFlags>> {
         unsafe {
             check(csdk::HAL_UART_Receive(&mut self.handle, 
                 buffer.as_ptr() as *mut u8, 
                 buffer.len() as u16, 
-                self.timeout.get_tick()))
+                self.timeout.get_tick()), ||self.gerr())
         }
     }
 }

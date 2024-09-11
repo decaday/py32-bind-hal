@@ -3,6 +3,8 @@
 #![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
 
+use core::ptr::addr_of_mut;
+
 use cortex_m_rt;
 use cortex_m;
 use {defmt_rtt as _, panic_probe as _};
@@ -14,6 +16,8 @@ use embassy_time::{Duration, Timer};
 
 use py32_bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc, dma, uart};
 
+static mut ADC_DATA: [u32; 1] = [3; 1];
+
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
     py32_bind_hal::init();
@@ -22,10 +26,14 @@ async fn main(_spawner: Spawner) -> ! {
     defmt::println!("Hello, world!  2");
     rcc_test();
     adc_blocking_test();
+        
+   
     adc_dma_test();
-
-    // i2c_test();
+    defmt::println!("Hello, world!  3");
     uart_test();
+    
+    // i2c_test();
+
     exti_test().await;
     
     // unsafe{
@@ -53,9 +61,9 @@ fn init_pb3() {
 }
 
 fn i2c_test() {
-    let mut scl = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_3).unwrap();
+    let mut scl = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_8).unwrap();
     scl.set_as_af_od(csdk::GPIO_AF12_I2C, gpio::Pull::Up, gpio::Speed::VeryHigh);
-    let mut sda = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_2).unwrap();
+    let mut sda = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_7).unwrap();
     sda.set_as_af_od(csdk::GPIO_AF12_I2C, gpio::Pull::Up, gpio::Speed::VeryHigh);
 
     let mut config: i2c::Config = Default::default();
@@ -99,6 +107,7 @@ fn adc_blocking_test() {
     adc.start_blocking().unwrap();
     let result = adc.blocking_read();
     defmt::println!("adc value  {}", result);
+    adc.stop_blocking().unwrap();
 }
 
 fn adc_dma_test() {
@@ -110,17 +119,22 @@ fn adc_dma_test() {
     let mut adc = adc::Adc::new_dma(adc_config, 1, &mut dma_channel).unwrap();
     adc.new_regular_channel(csdk::ADC_CHANNEL_VREFINT).unwrap();
 
-
-    let mut data: [u32; 1] = [3; 1];
-    adc.start_dma(&mut data).unwrap();
+    unsafe {
+        adc.start_dma(&mut ADC_DATA).unwrap();
+    }
     
     unsafe { csdk::HAL_Delay(100); }
-    defmt::println!("adc dma value  {}", data);
+    unsafe{
+        defmt::println!("adc dma value  {}", ADC_DATA);
+    }
+
     unsafe { csdk::HAL_Delay(100); }
-    defmt::println!("adc dma value  {}", data);
+    // defmt::println!("adc dma value  {}", ADC_DATA);
+
+    adc.stop_dma().unwrap();
 }
 
-
+// knows issue: uart cant run after DMA ADC start
 fn uart_test() {
     let mut scl = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_3).unwrap();
     scl.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);

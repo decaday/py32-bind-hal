@@ -171,13 +171,23 @@ impl Adc {
         }
     }
 
-    pub fn start_dma(&mut self, read: &mut [u32]) -> Result<(), Error<AdcErrorFlags>> {
+    /// You need to provide a 'static mutable borrow.
+    /// If you are executing this function in a task that never ends, use `start_dma_unsafe`
+    pub fn start_dma(&mut self, read: &'static mut [u32]) -> Result<(), Error<AdcErrorFlags>> {
         unsafe {
             check(csdk::HAL_ADC_Start_DMA(
                 &mut self.handle,
                 read.as_mut_ptr(),
                 read.len() as u32), ||self.gerr())
         }
+    }
+
+    /// Please make sure that read is not destroyed before DMA stops.
+    pub unsafe fn start_dma_unsafe(&mut self, read: & mut [u32]) -> Result<(), Error<AdcErrorFlags>> {
+        check(csdk::HAL_ADC_Start_DMA(
+            &mut self.handle,
+            read.as_mut_ptr(),
+            read.len() as u32), ||self.gerr())
     }
 
     pub fn stop_dma(&mut self) -> Result<(), Error<AdcErrorFlags>> {

@@ -122,6 +122,8 @@ pub mod adc;
 
 pub mod dma;
 
+pub mod timer;
+
 pub mod csdk_hal;
 
 mod time_driver;

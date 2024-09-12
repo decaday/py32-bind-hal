@@ -14,7 +14,7 @@ use embedded_hal::{self as embedded_hal_1, i2c::I2c};
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 
-use py32_bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc, dma, uart};
+use py32_bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc, dma, uart, timer};
 
 static mut ADC_DATA: [u32; 1] = [3; 1];
 
@@ -31,6 +31,7 @@ async fn main(_spawner: Spawner) -> ! {
     adc_dma_test();
     defmt::println!("Hello, world!  3");
     uart_test();
+    timpwm_test();
     
     // i2c_test();
 
@@ -145,4 +146,16 @@ fn uart_test() {
     let mut uart = uart::Uart::new_blocking(1, uart_config).unwrap();
     let data: [u8; 5] = ['a' as u8 ; 5];
     uart.blocking_write(&data).unwrap();
+}
+
+fn timpwm_test() {
+    let config = timer::simple_pwm::Config::default();
+    let mut tim3 = timer::simple_pwm::SimplePWM::new_from_csdk(csdk::TIM3, config);
+
+    let mut pin = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_6).unwrap();
+    pin.set_as_af_pp(csdk::GPIO_AF2_TIM1, gpio::Pull::Up, gpio::Speed::VeryHigh);
+
+    let mut config = timer::simple_pwm::ChannelConfig::default();
+    config.init.Pulse = 10;
+    tim3.new_channel(timer::Channel::Ch1, config);
 }

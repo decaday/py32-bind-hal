@@ -111,3 +111,9 @@ pub fn get_sys_clock_freq() -> u32 {
         csdk::HAL_RCC_GetSysClockFreq()
     }
 }
+
+pub fn get_pclk_freq() -> u32 {
+    unsafe {
+        csdk::HAL_RCC_GetPCLK1Freq()
+    }
+}

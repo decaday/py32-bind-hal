@@ -26,7 +26,7 @@ Users can also directly use FFI to perform complex operations without manipulati
 | DMA                   | ✔        | ✔                  | N/C          |
 | RTC                   | ✔        |                    | N/C          |
 | WDG                   | ✔        |                    | N/C          |
-| PWM/TIMER             | ✔        | ✔(only pwm)        | N/C          |
+| PWM/TIMER             | ✔        | ✔(only PWM now)    | N/C          |
 
 | Peripherals/Functions | Bindings | Easy-to-use func | embedded-hal/io | embedded-hal/io-async | Polling | DMA | IT  |
 | --------------------- | -------- | ---------------- | --------------- | --------------------- | ------- | --- | --- |

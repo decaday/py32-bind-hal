@@ -3,8 +3,6 @@
 #![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
 
-use core::ptr::addr_of_mut;
-
 use cortex_m_rt;
 use cortex_m;
 use {defmt_rtt as _, panic_probe as _};
@@ -31,6 +29,8 @@ async fn main(_spawner: Spawner) -> ! {
     adc_dma_test();
     defmt::println!("Hello, world!  3");
     uart_test();
+
+
     timpwm_test();
     
     // i2c_test();
@@ -54,9 +54,9 @@ fn init_pb3() {
     pin.set_as_output(gpio::Speed::High);
     pin.set_high();
 
-    let mut pin2 = gpio::AnyPin::new('B', 1).unwrap();
-    pin2.set_as_output(gpio::Speed::High);
-    pin2.set_low();
+    // let mut pin2 = gpio::AnyPin::new('B', 1).unwrap();
+    // pin2.set_as_output(gpio::Speed::High);
+    // pin2.set_low();
 
     // power::enter_sleep_mode(power::SleepEntry::Wfi);
 }
@@ -103,7 +103,7 @@ fn rcc_test() {
 fn adc_blocking_test() {
     let mut adc_config = adc::AdcConfig::new();
     adc_config.set_as_blocking();
-    let mut adc = adc::Adc::new(adc_config, 1).unwrap();
+    let mut adc = adc::Adc::new(1, adc_config).unwrap();
     adc.new_regular_channel(csdk::ADC_CHANNEL_VREFINT).unwrap();
     adc.start_blocking().unwrap();
     let result = adc.blocking_read();
@@ -117,7 +117,7 @@ fn adc_dma_test() {
 
     let mut adc_config = adc::AdcConfig::new();
     adc_config.set_as_dma();
-    let mut adc = adc::Adc::new_dma(adc_config, 1, &mut dma_channel).unwrap();
+    let mut adc = adc::Adc::new_dma(1, adc_config, &mut dma_channel).unwrap();
     adc.new_regular_channel(csdk::ADC_CHANNEL_VREFINT).unwrap();
 
     unsafe {
@@ -135,7 +135,6 @@ fn adc_dma_test() {
     adc.stop_dma().unwrap();
 }
 
-// knows issue: uart cant run after DMA ADC start
 fn uart_test() {
     let mut scl = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_3).unwrap();
     scl.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);
@@ -149,13 +148,16 @@ fn uart_test() {
 }
 
 fn timpwm_test() {
-    let config = timer::simple_pwm::Config::default();
-    let mut tim3 = timer::simple_pwm::SimplePWM::new_from_csdk(csdk::TIM3, config);
+    let freq = rcc::get_pclk_freq();
+    defmt::println!("HAL_RCC_GetPclkFreq  {}", freq);
 
-    let mut pin = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_6).unwrap();
-    pin.set_as_af_pp(csdk::GPIO_AF2_TIM1, gpio::Pull::Up, gpio::Speed::VeryHigh);
+    let config = timer::simple_pwm::Config::new(1000, 100);
+    let mut tim3 = timer::simple_pwm::SimplePWM::new_from_csdk(csdk::TIM3, config).unwrap();
+
+    let mut pin = gpio::AnyPin::new_from_csdk(csdk::GPIOB, csdk::GPIO_PIN_1).unwrap();
+    pin.set_as_af_pp(csdk::GPIO_AF1_TIM3, gpio::Pull::Up, gpio::Speed::VeryHigh);
 
     let mut config = timer::simple_pwm::ChannelConfig::default();
-    config.init.Pulse = 10;
-    tim3.new_channel(timer::Channel::Ch1, config);
+    config.init.Pulse = 40;
+    tim3.new_channel(timer::Channel::Ch4, config).unwrap();
 }

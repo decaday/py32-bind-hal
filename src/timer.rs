@@ -1,5 +1,6 @@
 use crate::*;
 use csdk_hal::check;
+use defmt::bitflags;
 
 pub struct Timer {
     pub handle: csdk::TIM_HandleTypeDef,
@@ -31,13 +32,23 @@ pub mod simple_pwm {
             Self {
                 init: csdk::TIM_Base_InitTypeDef {
                     Period: 50,
-                    Prescaler: 800 - 1,
+                    Prescaler: 4800 - 1,
                     ClockDivision: csdk::TIM_CLOCKDIVISION_DIV1,
                     CounterMode: csdk::TIM_COUNTERMODE_UP,
                     RepetitionCounter: 1 - 1,
                     AutoReloadPreload: csdk::TIM_AUTORELOAD_PRELOAD_DISABLE,
                 }
             }
+        }
+    }
+
+    impl Config {
+        pub fn new(freq_hz: u32, period: u32) -> Self {
+            let pclk_freq = rcc::get_pclk_freq();
+            let mut config = Self::default();
+            config.init.Period = period;
+            config.init.Prescaler = (pclk_freq / freq_hz) / period - 1;
+            config
         }
     }
 
@@ -62,7 +73,7 @@ pub mod simple_pwm {
     }
 
     impl SimplePWM {
-        pub fn new_from_csdk(instance: *mut csdk::TIM_TypeDef, config: Config) -> Self {
+        pub fn new_from_csdk(instance: *mut csdk::TIM_TypeDef, config: Config) -> Result<Self, Error<()>> {
             let mut handle = csdk::TIM_HandleTypeDef {
                 Instance: instance,
                 Init: config.init,
@@ -72,26 +83,54 @@ pub mod simple_pwm {
                 Lock: 0,
             };
 
+            Self::open_clk(instance);
             unsafe {
-                csdk::HAL_TIM_PWM_Init(&mut handle);
+                check(csdk::HAL_TIM_PWM_Init(&mut handle), ||Self::gerr())?;
             }
-            Self { handle }
+            Ok(Self { handle })
+        }
+
+        pub fn open_clk(instance: *mut csdk::TIM_TypeDef){
+            unsafe {
+                    match instance {
+                    csdk::TIM1 => {
+                        csdk::HAL_RCC_TIM1_CLK_ENABLE();
+                    },
+                    csdk::TIM3 => {
+                        csdk::HAL_RCC_TIM3_CLK_ENABLE();
+                    },
+                    csdk::TIM14 => {
+                        csdk::HAL_RCC_TIM14_CLK_ENABLE();
+                    },
+                    csdk::TIM16 => {
+                        csdk::HAL_RCC_TIM16_CLK_ENABLE();
+                    },
+                    csdk::TIM17 => {
+                        csdk::HAL_RCC_TIM16_CLK_ENABLE();
+                    },
+                    _ => panic!()
+                }
+            }
         }
 
         // pub fn new_channel(&mut self, channel: u32, config: ChannelConfig) {
         //     HAL_TIM_PWM_ConfigChannel(&TimHandle, &sConfig, TIM_CHANNEL_4)
         // }
 
-        pub fn new_channel(&mut self, channel: Channel, mut config: ChannelConfig) {
+        pub fn new_channel(&mut self, channel: Channel, mut config: ChannelConfig) -> Result<(), Error<()>> {
             unsafe {
-                csdk::HAL_TIM_PWM_ConfigChannel(&mut self.handle, &mut config.init, channel as u32);
-                csdk::HAL_TIM_PWM_Start(&mut self.handle, channel as u32);
+                check(
+                    csdk::HAL_TIM_PWM_ConfigChannel(&mut self.handle, &mut config.init, channel as u32), 
+                    ||Self::gerr())?;
+                check(csdk::HAL_TIM_PWM_Start(&mut self.handle, channel as u32), ||Self::gerr())
             }
         }
 
-        pub fn update_channel(&mut self, channel: Channel, mut config: ChannelConfig) {
+        pub fn update_channel(&mut self, channel: Channel, mut config: ChannelConfig) -> Result<(), Error<()>> {
             unsafe {
-                csdk::HAL_TIM_PWM_ConfigChannel(&mut self.handle, &mut config.init, channel as u32);
+                check(
+                    csdk::HAL_TIM_PWM_ConfigChannel(&mut self.handle, &mut config.init, channel as u32), 
+                    ||Self::gerr())
             }   
         }
 
@@ -111,13 +150,15 @@ pub mod simple_pwm {
             self.handle.Init.Period
         }
 
-        pub fn stop_channel(&mut self, channel: Channel) {
+        pub fn stop_channel(&mut self, channel: Channel) -> Result<(), Error<()>> {
             unsafe {
-                csdk::HAL_TIM_PWM_Stop(&mut self.handle, channel as u32);
+                check(csdk::HAL_TIM_PWM_Stop(&mut self.handle, channel as u32), ||Self::gerr())
             }
         }
 
-
+        pub fn gerr() -> Error<()> {
+            Error::HalError(())
+        }
     }
 
 

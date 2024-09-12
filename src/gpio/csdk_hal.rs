@@ -51,7 +51,7 @@ impl AnyPin{
             Alternate: 0,
         };
 
-        Self::open_clk_from_c_macro(port)?;
+        Self::open_clk(port);
         Ok(Self {port, pin, c_init_type })
     }
 
@@ -80,11 +80,11 @@ impl AnyPin{
             Alternate: 0,
         };
 
-        Self::open_clk_from_c_macro(port)?;
+        Self::open_clk(port);
         Ok(Self{ port, pin, c_init_type })
     }
 
-    fn open_clk_from_c_macro(port: *mut csdk::GPIO_TypeDef) -> Result<(), Error<()>>{
+    fn open_clk(port: *mut csdk::GPIO_TypeDef) {
         unsafe {
             match port {
                 #[cfg(feature = "peri-gpioa")]
@@ -93,14 +93,9 @@ impl AnyPin{
                 csdk::GPIOB => csdk::HAL_RCC_GPIOB_CLK_ENABLE(),
                 #[cfg(feature = "peri-gpiof")]
                 csdk::GPIOF => csdk::HAL_RCC_GPIOF_CLK_ENABLE(),
-                _ => return Err(Error::UserInput(InputError::InvalidInstance)),
+                _ => panic!(),
             };
-            Ok(())
         }
-    }
-
-    pub fn open_clk(&mut self) -> Result<(), Error<()>> {
-        Self::open_clk_from_c_macro(self.port)
     }
 
     /// Put the pin into input mode.

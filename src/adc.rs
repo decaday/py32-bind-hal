@@ -73,21 +73,39 @@ impl AdcConfig {
 }
 
 impl Adc {
-    pub fn new(config: AdcConfig, instance_num: u8) -> Result<Self, Error<AdcErrorFlags>> {
-        let mut adc = Self::new_inner(config, instance_num);
+    pub fn new(instance_num: u8, config: AdcConfig) -> Result<Self, Error<AdcErrorFlags>> {
+        let instance = Self::new_instance_from_num(instance_num);
+        Self::open_clock(instance);
+        let mut adc = Self::new_inner(config, instance);
         adc.init_inner()?;
         Ok(adc)
     }
 
-    pub fn new_dma(config: AdcConfig, instance_num: u8, dma: &mut dma::DmaChannel) -> Result<Self, Error<AdcErrorFlags>> {
-        let mut adc = Self::new_inner(config, instance_num);
+    pub fn new_dma(instance_num: u8, config: AdcConfig, dma: &mut dma::DmaChannel) -> Result<Self, Error<AdcErrorFlags>> {
+        let instance = Self::new_instance_from_num(instance_num);
+        Self::open_clock(instance);
+        let mut adc = Self::new_inner(config, instance);
         dma.link(&mut adc);
         adc.init_inner()?;
         Ok(adc)
     }
 
-    fn new_inner(config: AdcConfig, instance_num: u8) -> Self {
-        let instance = Self::new_instance_from_num(instance_num);
+    pub fn new_from_csdk(instance: *mut csdk::ADC_TypeDef,config: AdcConfig) -> Result<Self, Error<AdcErrorFlags>> {
+        let mut adc = Self::new_inner(config, instance);
+        Self::open_clock(instance);
+        adc.init_inner()?;
+        Ok(adc)
+    }
+
+    pub fn new_dma_from_csdk(instance: *mut csdk::ADC_TypeDef, config: AdcConfig, dma: &mut dma::DmaChannel) -> Result<Self, Error<AdcErrorFlags>> {
+        Self::open_clock(instance);
+        let mut adc = Self::new_inner(config, instance);
+        dma.link(&mut adc);
+        adc.init_inner()?;
+        Ok(adc)
+    }
+
+    fn new_inner(config: AdcConfig, instance: *mut csdk::ADC_TypeDef) -> Self {
         Self {
             handle: csdk::ADC_HandleTypeDef {
                 Instance: instance,
@@ -102,8 +120,6 @@ impl Adc {
     }
 
     fn init_inner(&mut self) -> Result<(), Error<AdcErrorFlags>> {
-        self.open_clock();
-
         unsafe {
             check(csdk::HAL_ADC_Calibration_Start(&mut self.handle), ||self.gerr())?;
             check(csdk::HAL_ADC_Init(&mut self.handle), ||self.gerr())?;
@@ -111,9 +127,9 @@ impl Adc {
         Ok(())
     }
 
-    fn open_clock(&self) {
+    fn open_clock(instance: *mut csdk::ADC_TypeDef) {
         unsafe{
-            match self.handle.Instance {
+            match instance {
                 csdk::ADC1 => {
                     csdk::HAL_RCC_ADC_FORCE_RESET();
                     csdk::HAL_RCC_ADC_RELEASE_RESET();

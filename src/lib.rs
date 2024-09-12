@@ -1,24 +1,6 @@
 #![no_main]
 #![no_std]
 
-use cortex_m_semihosting::debug;
-
-use defmt_rtt as _; // global logger
-
-use panic_probe as _;
-
-/// Hardfault handler.
-///
-/// Terminates the application and makes a semihosting-capable debug tool exit
-/// with an error. This seems better than the default, which is to spin in a
-/// loop.
-#[cortex_m_rt::exception]
-unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
-    loop {
-        debug::exit(debug::EXIT_FAILURE);
-    }
-}
-
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Error<E> {
     HalError(E),

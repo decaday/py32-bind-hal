@@ -21,7 +21,7 @@ use crate::mode::{Async, Blocking, Mode};
 
 
 
-/// I2C error.
+// I2C error.
 // #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 // #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 // pub enum I2cError {

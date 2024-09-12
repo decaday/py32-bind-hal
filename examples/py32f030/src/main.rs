@@ -5,42 +5,51 @@
 
 use cortex_m_rt;
 use cortex_m;
-use {defmt_rtt as _, panic_probe as _};
+use defmt;
+use defmt_rtt as _;
+use panic_probe as _;
 
-use embedded_hal::{self as embedded_hal_1, i2c::I2c};
+use cortex_m_semihosting::debug;
 
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 
 use py32_bind_hal::{csdk, gpio, power, i2c, exti, rcc, adc, dma, uart, timer};
+use embedded_hal::i2c::I2c;
 
 static mut ADC_DATA: [u32; 1] = [3; 1];
+
+/// Hardfault handler.
+///
+/// Terminates the application and makes a semihosting-capable debug tool exit
+/// with an error. This seems better than the default, which is to spin in a
+/// loop.
+#[cortex_m_rt::exception]
+unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
+    loop {
+        debug::exit(debug::EXIT_FAILURE);
+    }
+}
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
     py32_bind_hal::init();
-    defmt::println!("Hello, world!  1");
+
     init_pb3();
-    defmt::println!("Hello, world!  2");
+
     rcc_test();
+
     adc_blocking_test();
         
-   
     adc_dma_test();
-    defmt::println!("Hello, world!  3");
-    uart_test();
 
+    uart_test();
 
     timpwm_test();
     
-    // i2c_test();
+    i2c_test();
 
     exti_test().await;
-    
-    // unsafe{
-    //     let imr_value = (*csdk::EXTI).IMR;
-    //     defmt::println!("IMR: {:X}", imr_value);
-    // }
 
     loop {
         // defmt::println!("Hello World! n");
@@ -49,18 +58,22 @@ async fn main(_spawner: Spawner) -> ! {
 }
 
 
+/// Sets the PB3 pin to output mode and sets it high.
+/// This has the effect of enabling the external power supply.
 fn init_pb3() {
     let mut pin = gpio::AnyPin::new_from_csdk(csdk::GPIOB, csdk::GPIO_PIN_3).unwrap();
     pin.set_as_output(gpio::Speed::High);
     pin.set_high();
 
-    // let mut pin2 = gpio::AnyPin::new('B', 1).unwrap();
-    // pin2.set_as_output(gpio::Speed::High);
-    // pin2.set_low();
+    let mut pin2 = gpio::AnyPin::new('B', 2).unwrap();
+    pin2.set_as_output(gpio::Speed::High);
+    pin2.set_low();
 
     // power::enter_sleep_mode(power::SleepEntry::Wfi);
 }
 
+/// Tests the I2C interface by writing to the address 0x53 with the data "3".
+/// This will send the data to an I2C device on the bus.
 fn i2c_test() {
     let mut scl = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_8).unwrap();
     scl.set_as_af_od(csdk::GPIO_AF12_I2C, gpio::Pull::Up, gpio::Speed::VeryHigh);
@@ -71,8 +84,6 @@ fn i2c_test() {
     config.init.OwnAddress1 = 0x58;
     config.timeout = Duration::from_millis(2000);
     let mut i2c1 = i2c::I2c::new_blocking(config).unwrap();
-    unsafe { defmt::println!("SR1  {:?}", (*csdk::I2C).SR1) };
-    unsafe { defmt::println!("SR2  {:?}", (*csdk::I2C).SR2) };
     let data: [u8; 5] = [3; 5];
     i2c1.write(0x53, &data).unwrap();
     loop{
@@ -82,6 +93,8 @@ fn i2c_test() {
     }
 }
 
+/// Tests the EXTI (External Interrupts) interface by waiting for an edge on the
+/// PB6 pin.
 async fn exti_test() {
     let mut pin = exti::ExtiInput::new(
         gpio::AnyPin::new('B', 6).unwrap(), 
@@ -93,6 +106,8 @@ async fn exti_test() {
     defmt::println!("wait_for_any_edge  2");
 }
 
+/// Tests the HSE (High Speed External) clock source.
+/// This is the clock source used by the system clock.
 fn rcc_test() {
     rcc::into_48_mhz_hsi().unwrap();
 
@@ -100,6 +115,8 @@ fn rcc_test() {
     defmt::println!("HAL_RCC_GetSysClockFreq  {}", freq);
 }
 
+/// Tests the ADC interface in blocking mode.
+/// This means that the function will block until the ADC conversion is finished.
 fn adc_blocking_test() {
     let mut adc_config = adc::AdcConfig::new();
     adc_config.set_as_blocking();
@@ -111,6 +128,9 @@ fn adc_blocking_test() {
     adc.stop_blocking().unwrap();
 }
 
+/// Tests the ADC interface in DMA mode.
+/// This means that the function will return immediately and the ADC conversion
+/// will be done in the background.
 fn adc_dma_test() {
     let dma_config = dma::Config::new_peri_to_mem();
     let mut dma_channel = dma::DmaChannel::new(dma_config, 1, 0).unwrap();
@@ -135,6 +155,7 @@ fn adc_dma_test() {
     adc.stop_dma().unwrap();
 }
 
+/// Tests the UART interface by writing the string "a" to the serial port.
 fn uart_test() {
     let mut scl = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_3).unwrap();
     scl.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);
@@ -147,6 +168,8 @@ fn uart_test() {
     uart.blocking_write(&data).unwrap();
 }
 
+/// Tests the TIM3 peripheral by setting the frequency to 1000 Hz and the pulse
+/// width to 100.
 fn timpwm_test() {
     let freq = rcc::get_pclk_freq();
     defmt::println!("HAL_RCC_GetPclkFreq  {}", freq);
@@ -161,3 +184,4 @@ fn timpwm_test() {
     config.init.Pulse = 40;
     tim3.new_channel(timer::Channel::Ch4, config).unwrap();
 }
+

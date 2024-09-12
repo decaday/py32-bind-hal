@@ -70,7 +70,7 @@ bitflags! {
 
 /// I2C config
 #[non_exhaustive]
-#[derive(Copy, Clone)]
+#[derive(Debug)]
 pub struct Config {
     pub init: csdk::I2C_InitTypeDef,
     /// Timeout.

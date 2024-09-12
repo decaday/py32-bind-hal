@@ -110,12 +110,7 @@ impl DmaChannel {
             let result = csdk::HAL_DMA_Init(&mut handle);
             check(result, ||Error::HalError(DmaErrorFlags::from_bits_truncate(handle.ErrorCode)))?;
         }
-        // i do not know why this cant run
-        // let this = Self { handle };
-        // check(csdk::HAL_DMA_Init(&mut handle), ||this.gerr())?;
-        // Ok(this)
         Ok(Self { handle })
-
     }
 
     pub fn link(&mut self, handle: &mut impl HasDmaField){

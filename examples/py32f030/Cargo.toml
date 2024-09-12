@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-py32-bind-hal = { version = "0.4", path = "../../" }
+py32-bind-hal = { version = "0.5", path = "../../" }
 
 
 cortex-m-semihosting = { version = "0.5" }
@@ -15,7 +15,7 @@ panic-probe = { version = "0.3", features = ["print-defmt"] }
 defmt-rtt = "0.4"
 defmt = { version = "0.3"}
 
-embassy-time = { version = "0.3.0", features = ["tick-hz-1_000",]}
+embassy-time = { version = "0.3.0", features = ["tick-hz-1_000"]}
 embassy-executor = { version = "0.6", features = [
     "nightly",
     "integrated-timers",

@@ -32,7 +32,7 @@ impl From<Speed> for u32 {
 
 /// Any pin.
 /// for example,{csdk::GPIOB, csdk::GPIO_PIN_4, xxx}
-#[derive(Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct AnyPin {
     pub port: *mut csdk::GPIO_TypeDef,
     pub pin: u16,

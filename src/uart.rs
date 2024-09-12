@@ -170,3 +170,34 @@ impl<M: Mode> Uart<M> {
         }
     }
 }
+
+
+impl embedded_io::Error for Error<UartErrorFlags> {
+    fn kind(&self) -> embedded_io::ErrorKind {
+        embedded_io::ErrorKind::Other
+    }
+}
+
+impl<M: Mode> embedded_io::ErrorType for Uart<M> {
+    type Error = Error<UartErrorFlags>;
+}
+
+
+impl<M: Mode> embedded_io::Write for Uart<M> {
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
+        self.blocking_write(buf)?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+
+impl<M: Mode> embedded_io::Read for Uart<M> {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+        self.blocking_read(buf)?;
+        Ok(buf.len())
+    }
+}

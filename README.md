@@ -18,26 +18,27 @@ Users can also directly use FFI to perform complex operations without manipulati
 
 **Luat** AIR001
 
-| Peripherals/Functions | Bindings | Easy-to-use func   | Embedded-Hal |
+| Peripherals/Functions | Bindings | Easy-to-use func   | embedded-hal |
 | --------------------- | -------- | ------------------ | ------------ |
 | GPIO                  | ✔        | ✔                  | ✔            |
-| RCC                   | ✔        | ✔                  | ✖            |
-| Power                 | ✔        | ✔(only sleep/stop) | ✖            |
-| PWM/TIMER             | ✔        |                    |              |
-| RTC                   | ✔        |                    |              |
-| WDG                   | ✔        |                    |              |
+| RCC                   | ✔        | ✔                  | N/C          |
+| Power                 | ✔        | ✔(only sleep/stop) | N/C          |
+| DMA                   | ✔        | ✔                  | N/C          |
+| RTC                   | ✔        |                    | N/C          |
+| WDG                   | ✔        |                    | N/C          |
+| PWM/TIMER             | ✔        | ✔(only pwm)        | N/C          |
 
-| Peripherals/Functions | Bindings | Easy-to-use func | Embedded-Hal | Embedded-Async | Polling | DMA | IT  |
-| --------------------- | -------- | ---------------- | ------------ | -------------- | ------- | --- | --- |
-| EXTI                  | ✔        | ✔                | ✔            | ✔              | ✖       | ✖   | ✔   |
-| I2C                   | ✔        | ✔                | ✔            |                | ✔       |     |     |
-| ADC                   | ✔        | ✔                | ✖            | ✖              | ✔       | ✔   |     |
-| USART                 | ✔        | WIP              |              |                |         |     |     |
-| SPI                   | ✔        |                  |              |                |         |     |     |
-| LED                   | ✔        |                  |              |                |         |     |     |
-|                       |          |                  |              |                |         |     |     |
+| Peripherals/Functions | Bindings | Easy-to-use func | embedded-hal/io | embedded-hal/io-async | Polling | DMA | IT  |
+| --------------------- | -------- | ---------------- | --------------- | --------------------- | ------- | --- | --- |
+| EXTI                  | ✔        | ✔                | ✔               | ✔                     | N/C     | N/C | ✔   |
+| I2C                   | ✔        | ✔                | ✔               |                       | ✔       |     |     |
+| ADC                   | ✔        | ✔                | N/C             | N/C                   | ✔       | ✔   |     |
+| UART                  | ✔        | ✔                |                 |                       | ✔       |     |     |
+| SPI                   | ✔        |                  |                 |                       |         |     |     |
 
-✖: mcu or embedded-hal not support
+N/C: mcu hardware or embedded-hal not support
+
+✖: no plan or hard to impl
 
 WIP: work in progress
 

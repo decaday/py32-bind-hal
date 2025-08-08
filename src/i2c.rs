@@ -4,7 +4,6 @@
 // modified from https://github.com/embassy-rs/embassy/
 // 94007ce6e0fc59e374902eadcc31616e56068e43
 
-use core::future::Future;
 use core::marker::PhantomData;
 
 use embedded_hal as embedded_hal_1;
@@ -15,7 +14,7 @@ use defmt::bitflags;
 
 use csdk_hal::check;
 use crate::*;
-use crate::mode::{Async, Blocking, Mode};
+use crate::mode::{Blocking, Mode};
 
 
 

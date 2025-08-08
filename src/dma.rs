@@ -117,7 +117,7 @@ impl DmaChannel {
         handle.set_dma_field(self);
         self.handle.Parent = handle.get_handle_ptr();
     }
-
+#[allow(dead_code)]
     fn gerr(&self) -> Error<DmaErrorFlags> {
         Error::HalError(DmaErrorFlags::from_bits_truncate(self.handle.ErrorCode))
     }

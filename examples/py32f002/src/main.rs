@@ -12,9 +12,20 @@ use py32_bind_hal::Timeout;
 use cortex_m_semihosting::debug;
 
 use embassy_executor::Spawner;
-use embassy_time::{Duration, Timer};
+use embassy_time::Timer;
 
 use py32_bind_hal::{csdk, gpio, uart};
+
+const TIMEOUT_MS: u32 = 100;
+
+// `const` fonksiyonlar derleme zamanında hesaplanır
+const fn get_timeout_from_ms(ms: u32) -> u32 {
+    (ms + TIMEOUT_MS - 1) / TIMEOUT_MS
+}
+const SHORT_TERM_TIMEOUT: u32 = get_timeout_from_ms(5000);
+const LONG_TERM_TIMEOUT: u32 = get_timeout_from_ms(15000);
+
+const PACKET_SIZE: usize = 18;
 //--------------------------------------------------------------
 //--------------------------------------------------------------
 //--------------------------------------------------------------
@@ -29,13 +40,19 @@ unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
 async fn main(_spawner: Spawner) -> ! {
     py32_bind_hal::init();
 
-    let mut led = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_1).unwrap();
-    led.set_as_output(gpio::Speed::High);
+    Timer::after_millis(500).await;
+
+    let mut output = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_1).unwrap();
+    output.set_as_output(gpio::Speed::High);
+    output.set_high();
+
+    let mut input = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_2).unwrap();
+    input.set_as_input(gpio::Pull::Up, gpio::Speed::VeryHigh);
 
     let mut rx = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_10).unwrap();
     rx.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);
-    let mut tx = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_2).unwrap();
-    tx.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);
+    //let mut tx = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_2).unwrap();
+    //tx.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);
 
     let mut uart_config = uart::Config::default();
 
@@ -43,54 +60,69 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut uart = uart::Uart::new_blocking(1, uart_config).unwrap();
 
-    //uart.set_timeout(Timeout::new_mill(0xFFFFFFFF)); // MAX
-
-    uart.blocking_write(b"Restart!\n").unwrap();
-
-    const TIMEOUT_MS: u32 = 10;
-    const PACKET_SIZE: usize = 18;
-
-    let mut data_buffer: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
+    let mut new_barcode: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
     let mut current_pos = 0;
 
-    // Timeout'u her bir byte için ayarla
     uart.set_timeout(Timeout::new_mill(TIMEOUT_MS));
 
+    let mut short_timeout: u32 = LONG_TERM_TIMEOUT;
+    let mut long_timeout: u32 = LONG_TERM_TIMEOUT;
+
+    defmt::println!("Start loop()");
+
     loop {
+        if input.is_low() {
+            // test basladı mı?
+            // evet
+            short_timeout = SHORT_TERM_TIMEOUT;
+            long_timeout = LONG_TERM_TIMEOUT;
+        }
+        //-------------------
+        if short_timeout > 0 {
+            short_timeout -= 1;
+            if short_timeout == 0 {
+                output.set_high(); // testi engelle!
+                defmt::println!("Short term timeout expired!");
+            }
+        }
+        //-------------------
+        if long_timeout > 0 {
+            long_timeout -= 1;
+            if long_timeout == 0 {
+                output.set_high(); // testi engelle!
+                defmt::println!("Long term timeout expired!");
+            }
+        }
+        //-------------------
         let mut byte: [u8; 1] = [0];
 
         match uart.blocking_read(&mut byte) {
             Ok(()) => {
-                // Byte okundu, tampona ekle
-                data_buffer[current_pos] = byte[0];
+                new_barcode[current_pos] = byte[0];
                 current_pos += 1;
 
-                // Eğer 18 byte'a ulaştıysak, paketi tamamla
                 if current_pos == PACKET_SIZE {
                     defmt::println!("Packet received with length: {}", current_pos);
                     let received_data =
-                        core::str::from_utf8(&data_buffer).unwrap_or("Unexpected UTF-8 data.");
+                        core::str::from_utf8(&new_barcode).unwrap_or("Unexpected UTF-8 data.");
                     defmt::println!("Read data: {}", received_data);
-                    
-                    // Başarıyla okunan veriyi geri gönder
-                    //uart.blocking_write(&data_buffer).unwrap();
 
-                    // Yeni bir paket için hazırlan
                     current_pos = 0;
 
-                    for i in 0..6 {                        
-                        led.toggle();                        
-                        Timer::after_millis(30).await;
-                    }
+                    defmt::println!("Receiving new barcode!");
+                    
+                    output.set_high();
+                    Timer::after_millis(300).await;
+                    output.set_low(); // teste izin ver!
+
+                    short_timeout = LONG_TERM_TIMEOUT;
+                    long_timeout = LONG_TERM_TIMEOUT;
                 }
             }
-            Err(e) => {
-                // Okuma sırasında timeout oldu.
+            Err(_e) => {
                 if current_pos > 0 {
-                    // Eğer paket ortasındaysak, paketi bozuk kabul et
                     defmt::println!("Packet broken due to timeout. {} bytes lost.", current_pos);
                 }
-                // Senkronizasyonu yeniden sağlamak için paketi sıfırla
                 current_pos = 0;
             }
         }

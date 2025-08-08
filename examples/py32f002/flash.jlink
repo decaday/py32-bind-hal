@@ -1,0 +1,11 @@
+Device PY32F002
+SelectInterface SWD
+Speed 4000
+Power on
+Sleep 200
+Connect
+Sleep 200
+Loadfile target/thumbv6m-none-eabi/release/PY32F002.hex
+r
+//Power off
+Exit

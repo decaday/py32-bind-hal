@@ -7,7 +7,7 @@ use cortex_m_rt;
 use defmt;
 use defmt_rtt as _;
 use panic_probe as _;
-use py32_bind_hal::Timeout; 
+use py32_bind_hal::Timeout;
 
 use cortex_m_semihosting::debug;
 
@@ -29,46 +29,71 @@ unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
 async fn main(_spawner: Spawner) -> ! {
     py32_bind_hal::init();
 
+    let mut led = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_1).unwrap();
+    led.set_as_output(gpio::Speed::High);
+
     let mut rx = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_10).unwrap();
     rx.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);
     let mut tx = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_2).unwrap();
     tx.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);
 
-    let uart_config = uart::Config::default();    
-    let mut uart = uart::Uart::new_blocking(1, uart_config).unwrap();   
-        
-    //uart.set_timeout(Timeout::new_mill(0xFFFFFFFF));// MAX
-    uart.set_timeout(Timeout::new_mill(2000));   
+    let mut uart_config = uart::Config::default();
+
+    uart_config.init.BaudRate = 9600;
+
+    let mut uart = uart::Uart::new_blocking(1, uart_config).unwrap();
+
+    //uart.set_timeout(Timeout::new_mill(0xFFFFFFFF)); // MAX
 
     uart.blocking_write(b"Restart!\n").unwrap();
-    
-    let mut data: [u8; 18] = [0 as u8 ; 18];
 
-    match uart.blocking_read(&mut data) {
-        Ok(()) => {            
-            defmt::println!("Was read to data {} length.", data.len());            
-            let received_data = core::str::from_utf8(&data)
-                .unwrap_or("Unexpected UTF-8 data.");
-            defmt::println!("Read data: {}", received_data);
-        },
-        Err(e) => {            
-            defmt::println!("Data read error!");
-        }
-    }        
+    const TIMEOUT_MS: u32 = 10;
+    const PACKET_SIZE: usize = 18;
 
-    uart.blocking_write(&data).unwrap();
+    let mut data_buffer: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
+    let mut current_pos = 0;
 
-    uart.blocking_write(b"\r\nDone").unwrap();
-
-    let mut pin = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_1).unwrap();
-    pin.set_as_output(gpio::Speed::High);    
+    // Timeout'u her bir byte için ayarla
+    uart.set_timeout(Timeout::new_mill(TIMEOUT_MS));
 
     loop {
-        defmt::println!("Hello World!");
-        pin.set_low();
-        Timer::after_millis(300).await;
-        pin.set_high();
-        Timer::after_millis(30).await;
+        let mut byte: [u8; 1] = [0];
+
+        match uart.blocking_read(&mut byte) {
+            Ok(()) => {
+                // Byte okundu, tampona ekle
+                data_buffer[current_pos] = byte[0];
+                current_pos += 1;
+
+                // Eğer 18 byte'a ulaştıysak, paketi tamamla
+                if current_pos == PACKET_SIZE {
+                    defmt::println!("Packet received with length: {}", current_pos);
+                    let received_data =
+                        core::str::from_utf8(&data_buffer).unwrap_or("Unexpected UTF-8 data.");
+                    defmt::println!("Read data: {}", received_data);
+                    
+                    // Başarıyla okunan veriyi geri gönder
+                    //uart.blocking_write(&data_buffer).unwrap();
+
+                    // Yeni bir paket için hazırlan
+                    current_pos = 0;
+
+                    for i in 0..6 {                        
+                        led.toggle();                        
+                        Timer::after_millis(30).await;
+                    }
+                }
+            }
+            Err(e) => {
+                // Okuma sırasında timeout oldu.
+                if current_pos > 0 {
+                    // Eğer paket ortasındaysak, paketi bozuk kabul et
+                    defmt::println!("Packet broken due to timeout. {} bytes lost.", current_pos);
+                }
+                // Senkronizasyonu yeniden sağlamak için paketi sıfırla
+                current_pos = 0;
+            }
+        }
     }
 }
 //--------------------------------------------------------------

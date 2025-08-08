@@ -7,7 +7,8 @@
             //"command": "cargo build --release && arm-none-eabi-size -B $(find target -type f -name 'py32f030')", // sadece derler (binmesede bindi derler)
             //"command": "project_name=$(grep '^name =' Cargo.toml | sed -n 's/^name = \"\\(.*\\)\"/\\1/p') && cargo build --release && arm-none-eabi-size -B $(find target -type f -name \"$project_name\")",// derler ve build boyutunu çıktı verir. farklı bir yol            
             //"command": "project_name=$(awk -F'\"' '/name =/ {print $2}' Cargo.toml) && cargo build --release && arm-none-eabi-size -B $(find target -type f -name \"$project_name\")", // derler ve build boyutunu çıktı verir.
-            "command": "project_name=$(awk -F'\"' '/name =/ {print $2}' Cargo.toml) && cargo build --release && elf_file=$(find target -type f -name \"$project_name\") && arm-none-eabi-objcopy -O ihex \"$elf_file\" \"${elf_file%.*}.hex\" && arm-none-eabi-size -B \"$elf_file\"", // hem derler hem build boyutunu yazar hemde hex oluşturur!
+            //"command": "project_name=$(awk -F'\"' '/name =/ {print $2}' Cargo.toml) && cargo build --release && elf_file=$(find target -type f -name \"$project_name\") && arm-none-eabi-objcopy -O ihex \"$elf_file\" \"${elf_file%.*}.hex\" && arm-none-eabi-size -B \"$elf_file\"", // hem derler hem build boyutunu yazar hemde hex oluşturur!
+            "command": "project_name=$(awk -F'\"' '/name =/ {print $2}' Cargo.toml) && cargo build --release && elf_file=$(find target/thumbv6m-none-eabi/release/ -type f -name \"$project_name\") && arm-none-eabi-objcopy -O ihex \"$elf_file\" \"${elf_file%.*}.hex\" && arm-none-eabi-size -B \"$elf_file\"",
             "group": {
                 "kind": "build",
                 "isDefault": true

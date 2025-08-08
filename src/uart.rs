@@ -169,6 +169,10 @@ impl<M: Mode> Uart<M> {
                 self.timeout.get_tick()), ||self.gerr())
         }
     }
+
+    pub fn set_timeout(&mut self, timeout: Timeout) {
+        self.timeout = timeout;
+    }
 }
 
 

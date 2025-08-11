@@ -23,7 +23,7 @@ const fn get_timeout_from_ms(ms: u32) -> u32 {
     (ms + TIMEOUT_MS - 1) / TIMEOUT_MS
 }
 const SHORT_TERM_TIMEOUT: u32 = get_timeout_from_ms(5000);
-const LONG_TERM_TIMEOUT: u32 = get_timeout_from_ms(15000);
+const LONG_TERM_TIMEOUT: u32 = get_timeout_from_ms(60000);
 
 const PACKET_SIZE: usize = 18;
 //--------------------------------------------------------------
@@ -68,7 +68,7 @@ async fn main(_spawner: Spawner) -> ! {
     let mut short_timeout: u32 = LONG_TERM_TIMEOUT;
     let mut long_timeout: u32 = LONG_TERM_TIMEOUT;
 
-    defmt::println!("Start loop()");
+    defmt::println!("Restart V1.0");
 
     loop {
         if input.is_low() {
@@ -100,27 +100,21 @@ async fn main(_spawner: Spawner) -> ! {
             Ok(()) => {
                 new_barcode[current_pos] = byte[0];
                 current_pos += 1;
-
+            }
+            Err(_e) => {
                 if current_pos == PACKET_SIZE {
                     defmt::println!("Packet received with length: {}", current_pos);
                     let received_data =
                         core::str::from_utf8(&new_barcode).unwrap_or("Unexpected UTF-8 data.");
-                    defmt::println!("Read data: {}", received_data);
+                    defmt::println!("Read new barcode data: {}", received_data);
 
-                    current_pos = 0;
-
-                    defmt::println!("Receiving new barcode!");
-                    
                     output.set_high();
-                    Timer::after_millis(300).await;
+                    Timer::after_millis(200).await;
                     output.set_low(); // teste izin ver!
 
                     short_timeout = LONG_TERM_TIMEOUT;
                     long_timeout = LONG_TERM_TIMEOUT;
-                }
-            }
-            Err(_e) => {
-                if current_pos > 0 {
+                } else if current_pos > 0 {
                     defmt::println!("Packet broken due to timeout. {} bytes lost.", current_pos);
                 }
                 current_pos = 0;

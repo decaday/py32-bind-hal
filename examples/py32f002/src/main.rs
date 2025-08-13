@@ -14,18 +14,21 @@ use cortex_m_semihosting::debug;
 use embassy_executor::Spawner;
 use embassy_time::Timer;
 
-use py32_bind_hal::{csdk, gpio, uart};
+use py32_bind_hal::{csdk, gpio, uart, iwdg};
 
 const TIMEOUT_MS: u32 = 100;
 
-// `const` fonksiyonlar derleme zamanında hesaplanır
 const fn get_timeout_from_ms(ms: u32) -> u32 {
     (ms + TIMEOUT_MS - 1) / TIMEOUT_MS
 }
 const SHORT_TERM_TIMEOUT: u32 = get_timeout_from_ms(5000);
 const LONG_TERM_TIMEOUT: u32 = get_timeout_from_ms(60000);
 
-const PACKET_SIZE: usize = 18;
+const BARCODE_SIZE: usize = 18;
+
+const BUFFER_SIZE: usize = 128;
+
+use py32csdk_hal_sys::IWDG_PRESCALER_16; // ~2sn
 //--------------------------------------------------------------
 //--------------------------------------------------------------
 //--------------------------------------------------------------
@@ -38,8 +41,9 @@ unsafe fn HardFault(_frame: &cortex_m_rt::ExceptionFrame) -> ! {
 //--------------------------------------------------------------
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    py32_bind_hal::init();
-
+    py32_bind_hal::init();   
+    let mut hiwdg = iwdg::iwdg_init(IWDG_PRESCALER_16).expect("IWDG does not initalize!");
+    
     Timer::after_millis(500).await;
 
     let mut output = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_1).unwrap();
@@ -51,8 +55,6 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut rx = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_10).unwrap();
     rx.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);
-    //let mut tx = gpio::AnyPin::new_from_csdk(csdk::GPIOA, csdk::GPIO_PIN_2).unwrap();
-    //tx.set_as_af_pp(csdk::GPIO_AF1_USART1, gpio::Pull::Up, gpio::Speed::VeryHigh);
 
     let mut uart_config = uart::Config::default();
 
@@ -60,7 +62,7 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut uart = uart::Uart::new_blocking(1, uart_config).unwrap();
 
-    let mut new_barcode: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
+    let mut new_barcode: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
     let mut current_pos = 0;
 
     uart.set_timeout(Timeout::new_mill(TIMEOUT_MS));
@@ -68,9 +70,12 @@ async fn main(_spawner: Spawner) -> ! {
     let mut short_timeout: u32 = LONG_TERM_TIMEOUT;
     let mut long_timeout: u32 = LONG_TERM_TIMEOUT;
 
-    defmt::println!("Restart V1.0");
+    defmt::println!("Restart V1.1");
 
     loop {
+        
+        iwdg::iwdg_refresh(&mut hiwdg);
+
         if input.is_low() {
             // test basladı mı?
             // evet
@@ -102,7 +107,7 @@ async fn main(_spawner: Spawner) -> ! {
                 current_pos += 1;
             }
             Err(_e) => {
-                if current_pos == PACKET_SIZE {
+                if current_pos == BARCODE_SIZE {
                     defmt::println!("Packet received with length: {}", current_pos);
                     let received_data =
                         core::str::from_utf8(&new_barcode).unwrap_or("Unexpected UTF-8 data.");

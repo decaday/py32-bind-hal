@@ -1,6 +1,4 @@
 use crate::*;
-use csdk_hal::check;
-use defmt::bitflags;
 
 pub struct Timer {
     pub handle: csdk::TIM_HandleTypeDef,

@@ -1,18 +1,14 @@
 //! Universal Asynchronous Receiver Transmitter (UART)
 
 
-use core::future::Future;
 use core::marker::PhantomData;
 
-use embedded_hal as embedded_hal_1;
-
 #[cfg(feature = "time")]
-use embassy_time::Duration;
 use defmt::bitflags;
 
 use csdk_hal::check;
 use crate::*;
-use crate::mode::{Async, Blocking, Mode};
+use crate::mode::{Blocking, Mode};
 
 pub struct Config {
     pub init: csdk::UART_InitTypeDef,
@@ -168,6 +164,10 @@ impl<M: Mode> Uart<M> {
                 buffer.len() as u16, 
                 self.timeout.get_tick()), ||self.gerr())
         }
+    }
+
+    pub fn set_timeout(&mut self, timeout: Timeout) {
+        self.timeout = timeout;
     }
 }
 

@@ -41,8 +41,8 @@ embedded-hal = "1.0.0-alpha.11"
 embedded-hal-async = "1.0"
 embedded-io = "0.6"
 
-# py32csdk-hal-sys = "0.4.0"
-py32csdk-hal-sys = { path = "../py32csdk-hal-sys" }
+py32csdk-hal-sys = "0.4.0"
+#py32csdk-hal-sys = { path = "../py32csdk-hal-sys" }
 
 [features]
 default = ["py32f030", "embassy", "time", "defmt"]
@@ -86,6 +86,7 @@ peri-dma = []
 default-target = "thumbv6m-none-eabi"
 
 
-[patch.crates-io]
-py32csdk-hal-sys = { path = "../py32csdk-hal-sys" }
+#[patch.crates-io]
+#py32csdk-hal-sys = "0.4.0"
+#py32csdk-hal-sys = { path = "../py32csdk-hal-sys" }
 

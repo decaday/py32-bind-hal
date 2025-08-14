@@ -1,6 +1,5 @@
-/target
 /temp
-examples/py32f030/target
+target/
 
 Cargo.lock
 

@@ -10,11 +10,9 @@ Users can also directly use FFI to perform complex operations without manipulati
 
 ## Supported MCU:
 
-### ---PY32F0xx Series---
-
 **Puya** PY32F002A, PY32F003, PY32F030
 
-**Xinlinggo** XL32F003*, XL32F002A*
+**Xinlinggo** XL32F003, XL32F002A
 
 **Luat** AIR001
 
@@ -25,7 +23,7 @@ Users can also directly use FFI to perform complex operations without manipulati
 | Power                 | ✔        | ✔(only sleep/stop) | N/C          |
 | DMA                   | ✔        | ✔                  | N/C          |
 | RTC                   | ✔        |                    | N/C          |
-| WDG                   | ✔        |                    | N/C          |
+| IWDG                  | ✔        | ✔                  | N/C          |
 | PWM/TIMER             | ✔        | ✔(only PWM now)    | N/C          |
 
 | Peripherals/Functions | Bindings | Easy-to-use func | embedded-hal/io | embedded-hal/io-async | Polling | DMA | IT  |
@@ -49,7 +47,7 @@ Others:
 
 ## Why use bindings?
 
-Taking STM32 as an example, there are many excellent HALs available: [embassy](https://github.com/embassy-rs/embassy)   [stm32-rs](https://github.com/stm32-rs)
+Taking STM32 as an example, there are many excellent HALs available: [embassy](https://github.com/embassy-rs/embassy)   [stm32-rs](https://github.com/stm32-rs). **Here is [py32-hal](https://github.com/py32-rs/py32-hal), you may also be interested.**
 
 This crate’s performance, ROM, and RAM usage are far inferior to these HALs. 
 
@@ -57,10 +55,16 @@ However, most Rust HALs are maintained by the community or enthusiasts and do no
 
 This crate requires little maintenance and does not require dealing with registers. Even if there are unwrapped functions, others can easily supplement or directly call FFI.
 
-## py32csdk-hal-sys
+## Development
+
+You can find the datasheets, reference manuals at [Puya webside](https://www.puyasemi.com/en/download.html) or [here](https://github.com/decaday/PY32_Docs).
+
+This was one of my very first (and dirty) Rust projects, so feel free to refactor anything that looks weird...
+
+### py32csdk-hal-sys
 
 The CSDK and bindings for py32 are maintained here: [py32csdk-hal-sys](https://github.com/decaday/py32csdk-hal-sys), and this package already includes precompiled static library file and `bindings.rs` for quick use. However, if you want to recompile and generate bindings, it will be troublesome, please check its Docs. You need to enable the `recompile` feature.
 
-## Old Verisons
+### Old Verisons
 
 You can see old versions at [bind-hal  -  crates.io](https://crates.io/crates/bind-hal) and [decaday/bind-hal (github.com)](https://github.com/decaday/bind-hal) .

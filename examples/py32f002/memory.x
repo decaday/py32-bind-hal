@@ -1,5 +1,4 @@
-/* PY32F030x6 PY32F003x6 PY32C613x6 etc.*/
-/* Air001 */
+/* PY32F002A */
 
 MEMORY
 {
